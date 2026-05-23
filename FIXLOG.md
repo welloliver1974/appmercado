@@ -183,6 +183,16 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 - API route `/api/update-name` criada em path separado para evitar interceptação do Next.js.
 - Lê cookie `user-id` manualmente do header HTTP.
 
+### Leitor de QR Code da Nota (NFC-e/DANFE)
+- Componente `QRScanner` com câmera + `jsqr` para escanear QR.
+- Extrai chave de acesso (44 dígitos), CNPJ, data e total (modo contingência).
+- Preenche formulário automaticamente na página `/nova-nota`.
+
+### AI / Nova Nota
+- `ai.ts`: inicialização lazy do OpenAI client (não quebra sem API key).
+- Mensagem amigável quando API não configurada.
+- Botão de QR Code removido e reimplementado funcional.
+
 ---
 
 *Log gerado em 22/05/2026*
