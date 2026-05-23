@@ -1,10 +1,10 @@
 "use client";
 
+import { Suspense, useCallback, useRef } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { Search } from "lucide-react";
-import { useCallback, useRef } from "react";
 
-export function SearchInput({ placeholder }: { placeholder: string }) {
+function SearchInputInner({ placeholder }: { placeholder: string }) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -34,5 +34,13 @@ export function SearchInput({ placeholder }: { placeholder: string }) {
       />
       <button type="submit" className="hidden" />
     </form>
+  );
+}
+
+export function SearchInput({ placeholder }: { placeholder: string }) {
+  return (
+    <Suspense fallback={<div className="h-10 w-64 bg-zinc-900 rounded-lg animate-pulse" />}>
+      <SearchInputInner placeholder={placeholder} />
+    </Suspense>
   );
 }

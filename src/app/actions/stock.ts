@@ -30,16 +30,22 @@ export async function updateStockAction(formData: FormData) {
 export async function finalizarComprasAction() {
   const session = await auth();
   const userId = session?.user?.id;
-  if (!userId) throw new Error("Não autenticado");
+  if (!userId) return { error: "Não autenticado" };
 
-  await prisma.product.updateMany({
-    where: { userId, stock: { lte: 1 } },
-    data: { stock: 5 },
-  });
+  try {
+    await prisma.product.updateMany({
+      where: { userId, stock: { lte: 1 } },
+      data: { stock: 5 },
+    });
 
-  revalidatePath("/lista-compras");
-  revalidatePath("/");
-  revalidatePath("/estoque");
+    revalidatePath("/lista-compras");
+    revalidatePath("/");
+    revalidatePath("/estoque");
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao finalizar compras:", error);
+    return { error: "Falha ao finalizar compras" };
+  }
 }
 
 export async function deleteProductAction(formData: FormData) {

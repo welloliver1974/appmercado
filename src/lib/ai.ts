@@ -23,7 +23,6 @@ function getClient() {
   return new OpenAI({
     apiKey: activeConfig.apiKey,
     baseURL: activeConfig.baseURL,
-    dangerouslyAllowBrowser: true,
   });
 }
 

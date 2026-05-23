@@ -9,7 +9,6 @@ const { handlers, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
   ...authConfig,
   callbacks: {
-    ...authConfig.callbacks,
     async jwt({ token }) {
       if (token.sub) {
         (await cookies()).set("user-id", token.sub, { path: "/", httpOnly: true, maxAge: 60 * 60 * 24 * 7 });
