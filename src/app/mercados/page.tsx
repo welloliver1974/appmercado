@@ -41,8 +41,8 @@ export default async function MercadosPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {markets.map((market) => {
-            const total = market.receipts.reduce((sum, r) => sum + r.totalAmount, 0);
+          {markets.map((market: typeof markets[number]) => {
+            const total = market.receipts.reduce((sum: number, r: { totalAmount: number }) => sum + r.totalAmount, 0);
             return (
               <div key={market.id} className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-4 hover:border-blue-500/30 transition-all">
                 <div className="flex items-start justify-between">
