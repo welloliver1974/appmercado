@@ -259,13 +259,21 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 - Card "Preços Anormais" exibe alertas no dashboard.
 - Fallback silencioso se IA não configurada.
 
-### Busca de Preços Online (Google Custom Search)
+### Busca de Preços Online (DuckDuckGo HTML Search)
 - Novo botão "Preço online" em cada produto na página `/analise`.
-- `priceSearch.ts` consulta Google Custom Search para encontrar preços na web.
+- `priceSearch.ts` consulta DuckDuckGo HTML search (gratuito, sem API key).
+- Filtro de domínios: só exibe resultados de e-commerces brasileiros conhecidos (MercadoLivre, Carrefour, Amazon, Shopee, Magalu, etc.).
 - API route `/api/pesquisar-preco` faz a busca no servidor.
 - Componente `PriceSearchButton` exibe resultados (loja + preço) com link externo.
-- Fallback silencioso se `GOOGLE_API_KEY` / `GOOGLE_CX` não configurados.
-- Para configurar: adicionar `GOOGLE_API_KEY` e `GOOGLE_CX` no `.env`.
-  - Obter em: https://developers.google.com/custom-search/v1/introduction
+- Substituiu Google Custom Search API (não aceita mais novos cadastros) e Brave Search API (exige cartão de crédito).
+
+---
+
+## 🐛 Correções e Melhorias (23/05/2026 — tarde)
+
+### Compressão de imagem no upload de nota
+- `handleFileChange` em `/nova-nota` agora comprime a foto via Canvas API antes de enviar pra IA.
+- Redimensiona pra max 1024px de largura, qualidade JPEG 0.7.
+- Reduz drasticamente tokens gastos em chamadas de visão (foto de 8MB → ~100-200KB).
 
 *Log atualizado em 23/05/2026*

@@ -30,7 +30,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - `/notas` — Histórico com busca por mercado e produto, filtro `?mercado=`
 - `/estoque` — Tabela com +/-, delete, busca por nome
 - `/lista-compras` — Itens com estoque ≤ 1, finalizar compras, compartilhar
-- `/analise` — Comparação de preços por mercado + botão "Preço online" (Google)
+- `/analise` — Comparação de preços por mercado + botão "Preço online" (DuckDuckGo)
 - `/relatorios` — CSV mensal
 - `/mercados` — Lista + adicionar manual
 - `/config` — Editar nome, info da conta
@@ -44,7 +44,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - `askAssistant` — Chat com dados do usuário
 - `analyzeSpendingTrend` — Previsão de gastos
 - `detectPriceAnomaly` — Alertar preço fora da média
-- `priceSearch.ts` — Buscar preço online via Google Custom Search
+- `priceSearch.ts` — Buscar preço online via DuckDuckGo HTML search + filtro de domínios de e-commerce brasileiros (gratuito, sem API key)
 - Todas com fallback se API key não configurada
 
 ### PWA
@@ -64,12 +64,11 @@ DATABASE_URL="file:./dev.db"
 OPENROUTER_API_KEY=  # opcional, para IA
 GROQ_API_KEY=        # opcional, alternativa OpenRouter
 NEXT_PUBLIC_AI_PROVIDER=openrouter  # ou groq
-GOOGLE_API_KEY=      # opcional, para busca preço online
-GOOGLE_CX=           # opcional, ID do Google Custom Search
+# BRAVE_API_KEY obsoleta — busca preço usa DuckDuckGo HTML search (gratuito, sem key)
 ```
 
 ## Próximos Passos Possíveis
-- Configurar chaves de IA (OpenRouter/Groq) e Google Search
+- Configurar chaves de IA (OpenRouter/Groq)
 - Melhorias sugeridas pelo usuário (perguntar)
 
 ## Observações Técnicas

@@ -28,7 +28,7 @@ export function PriceSearchButton({ productName }: { productName: string }) {
       if (data.results && data.results.length > 0) {
         setResults(data.results);
       } else {
-        setError("Nenhum resultado encontrado. Configure GOOGLE_API_KEY e GOOGLE_CX no .env");
+        setError("Nenhum resultado encontrado.");
       }
     } catch {
       setError("Erro ao pesquisar.");
