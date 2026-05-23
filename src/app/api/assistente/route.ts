@@ -1,6 +1,19 @@
 import { prisma } from "@/lib/prisma";
 import { askAssistant } from "@/lib/ai";
 
+interface ReceiptWithMarket {
+  id: string;
+  date: Date;
+  totalAmount: number;
+  market: { name: string };
+  items: { product: { name: string } }[];
+}
+
+interface MonthlyAgg {
+  date: Date;
+  _sum: { totalAmount: number | null };
+}
+
 export async function POST(request: Request) {
   const cookieHeader = request.headers.get("cookie") || "";
   const userId = cookieHeader.split(";").find(c => c.startsWith("user-id="))?.split("=")[1];
@@ -29,12 +42,12 @@ export async function POST(request: Request) {
     }),
   ]);
 
-  const recentPurchases = recentReceipts
-    .map(r => `${r.market.name} (${r.date.toLocaleDateString("pt-BR")}): R$ ${r.totalAmount.toFixed(2)}`)
+  const recentPurchases = (recentReceipts as unknown as ReceiptWithMarket[])
+    .map((r) => `${r.market.name} (${r.date.toLocaleDateString("pt-BR")}): R$ ${r.totalAmount.toFixed(2)}`)
     .join(" | ");
 
   const monthMap = new Map<string, number>();
-  for (const r of monthlyAgg) {
+  for (const r of monthlyAgg as unknown as MonthlyAgg[]) {
     const key = `${r.date.getFullYear()}-${String(r.date.getMonth() + 1).padStart(2, "0")}`;
     monthMap.set(key, (monthMap.get(key) || 0) + (r._sum.totalAmount || 0));
   }
