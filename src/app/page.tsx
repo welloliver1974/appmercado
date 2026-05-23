@@ -57,6 +57,35 @@ export default async function Home() {
     where: { userId }
   });
 
+  const monthlyTotals = await prisma.receipt.groupBy({
+    by: ["date"],
+    _sum: { totalAmount: true },
+    where: { userId },
+    orderBy: { date: "desc" },
+  });
+
+  const monthsMap = new Map<string, number>();
+  for (const r of monthlyTotals) {
+    const key = `${r.date.getFullYear()}-${String(r.date.getMonth() + 1).padStart(2, "0")}`;
+    monthsMap.set(key, (monthsMap.get(key) || 0) + (r._sum.totalAmount || 0));
+  }
+  const monthlyArray = Array.from(monthsMap.entries()).sort();
+  const lastMonths = monthlyArray.slice(-3);
+  const avgMonthly =
+    lastMonths.length > 0
+      ? lastMonths.reduce((sum, [, v]) => sum + v, 0) / lastMonths.length
+      : 0;
+  const prediction = avgMonthly > 0 ? avgMonthly : totalSpentMonth._sum.totalAmount || 0;
+
+  let trend = "estável";
+  let trendUp = true;
+  if (lastMonths.length >= 2) {
+    const prev = lastMonths[lastMonths.length - 2][1];
+    const curr = lastMonths[lastMonths.length - 1][1];
+    if (curr > prev * 1.1) { trend = "alta"; trendUp = false; }
+    else if (curr < prev * 0.9) { trend = "queda"; trendUp = true; }
+  }
+
   return (
     <div className="p-8 space-y-8 bg-black min-h-screen text-white">
       {/* Header */}
@@ -113,10 +142,10 @@ export default async function Home() {
           color="bg-amber-500/10"
         />
         <StatCard 
-          title="Economia" 
-          value="R$ 0,00" 
-          trend="Este mês" 
-          trendUp={true} 
+          title="Previsão Próx. Mês" 
+          value={`R$ ${prediction.toFixed(2)}`} 
+          trend={trend} 
+          trendUp={trendUp} 
           icon={<Sparkles className="h-5 w-5 text-purple-400" />}
           color="bg-purple-500/10"
         />

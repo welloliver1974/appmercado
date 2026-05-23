@@ -137,10 +137,17 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 ### 9. Análise de Preços por Mercado (Multi-mercado)
 
 ### 10. Compartilhar Lista de Compras
-- Botão "Compartilhar" na página `/lista-compras` gera link único com validade de 7 dias.
-- Link é copiado automaticamente para a área de transferência.
-- Página pública `/compartilhado/[token]` exibe a lista sem necessidade de login.
-- Modelo `SharedList` no banco com token único e data de expiração.
+
+### 11. Previsão de Gastos (Estatística)
+- Dashboard exibe previsão de gastos para o próximo mês baseada na média dos últimos 3 meses.
+- Indicador de tendência (alta/queda/estável) compara o último mês com o anterior.
+- Cálculo usa dados reais do banco, sem depender de API externa.
+
+### 12. Modo Offline (PWA)
+- `manifest.json` com ícones e configuração de app instalável.
+- Service Worker (`sw.js`) com cache de assets e fallback offline.
+- Metatags para suporte a iOS (apple-mobile-web-app) e Android.
+- Script de registro automático do service worker no layout.
 - Página `/analise` agora exibe tabela de preços por mercado para cada produto.
 - Destaque visual para o mercado com menor preço (tag "MELHOR").
 - Ordenação automática do mais barato ao mais caro.
