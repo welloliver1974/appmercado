@@ -195,4 +195,36 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 
 ---
 
-*Log gerado em 22/05/2026*
+---
+
+## 🐛 Correções e Melhorias (23/05/2026)
+
+### Finalizar Compras
+- Botão "FINALIZAR COMPRAS" em `/lista-compras` agora funcional.
+- `finalizarComprasAction` zera o estoque de itens com stock ≤ 1 para 5 unidades.
+
+### Busca/Filtro em Notas e Estoque
+- Componente `SearchInput` com `?q=` na URL para busca em tempo real.
+- `/notas`: busca por nome do mercado E por nome do produto dentro dos itens.
+- `/estoque`: busca por nome do produto.
+- `/notas?mercado=XXX`: filtro por mercado específico (link vindo de `/mercados`).
+
+### Login Digital (Passkey) corrigido
+- O `jwt` callback do NextAuth agora seta o cookie `user-id` após autenticação bem-sucedida.
+- O proxy/middleware reconhece o cookie e permite o acesso normalmente.
+- Aba "Digital" agora deve funcionar em dispositivos com biometria.
+
+### manifest.json corrigido
+- Ícones trocados de `.png` para `.svg` (arquivos existentes no `public/`).
+
+### Página /offline criada
+- Service worker não quebra mais tentando cachear rota inexistente.
+
+### Ícone de notificação corrigido
+- `CriticalStockAlert` agora usa `/icon-192.svg` em vez de `/icon.png` (inexistente).
+
+### Migration regenerada
+- `prisma/migrations/` recriada do zero, 100% consistente com `schema.prisma`.
+- Novo setup: `npx prisma migrate dev` funciona direto (sem precisar de `db push`).
+
+*Log atualizado em 23/05/2026*

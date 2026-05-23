@@ -23,6 +23,11 @@ export default async function NotasPage(props: { searchParams?: Promise<{ q?: st
     where: { userId },
     include: {
       market: true,
+      items: {
+        include: {
+          product: { select: { name: true } }
+        }
+      },
       _count: {
         select: { items: true }
       }
@@ -33,7 +38,10 @@ export default async function NotasPage(props: { searchParams?: Promise<{ q?: st
   });
 
   let filtered = query
-    ? receipts.filter((r) => r.market.name.toLowerCase().includes(query))
+    ? receipts.filter((r) =>
+        r.market.name.toLowerCase().includes(query) ||
+        r.items.some((i) => i.product.name.toLowerCase().includes(query))
+      )
     : receipts;
 
   if (mercadoId) {
@@ -50,7 +58,7 @@ export default async function NotasPage(props: { searchParams?: Promise<{ q?: st
           </h1>
           <p className="text-zinc-400 text-sm mt-1">Histórico completo de todas as suas compras.</p>
         </div>
-        <SearchInput placeholder="Buscar por mercado..." />
+        <SearchInput placeholder="Buscar por mercado ou produto..." />
       </div>
 
       <div className="space-y-4">
