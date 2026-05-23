@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { categorizeProduct } from "@/lib/ai";
@@ -17,6 +17,7 @@ export async function saveReceiptAction(data: {
     unit: string;
   }>;
 }) {
+  const prisma = await getPrisma();
   const session = await auth();
   if (!session?.user?.id) throw new Error("Não autorizado");
 

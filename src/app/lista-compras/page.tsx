@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { 
   ShoppingCart, 
   CheckSquare, 
@@ -12,6 +12,7 @@ import { ShareListButton } from "@/components/ShareListButton";
 import { FinalizarComprasButton } from "@/components/FinalizarComprasButton";
 
 export default async function ListaComprasPage() {
+  const prisma = await getPrisma();
   const session = await auth();
   const userId = session?.user?.id;
 

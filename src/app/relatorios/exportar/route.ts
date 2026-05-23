@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 
 export async function GET(request: NextRequest) {
+  const prisma = await getPrisma();
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });

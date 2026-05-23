@@ -1,10 +1,11 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 
 export async function updateName(formData: FormData) {
+  const prisma = await getPrisma();
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return { error: "Não autenticado" };

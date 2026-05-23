@@ -1,10 +1,11 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 
 export async function updateStockAction(formData: FormData) {
+  const prisma = await getPrisma();
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return;
@@ -28,6 +29,7 @@ export async function updateStockAction(formData: FormData) {
 }
 
 export async function finalizarComprasAction() {
+  const prisma = await getPrisma();
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return { error: "Não autenticado" };
@@ -49,6 +51,7 @@ export async function finalizarComprasAction() {
 }
 
 export async function deleteProductAction(formData: FormData) {
+  const prisma = await getPrisma();
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return;

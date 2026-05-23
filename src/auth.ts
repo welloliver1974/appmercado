@@ -1,7 +1,8 @@
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { cookies } from "next/headers";
 
 async function auth(): Promise<{ user: { id: string; name: string | null; email: string | null } } | null> {
+  const prisma = await getPrisma();
   const cookieStore = await cookies();
   const userId = cookieStore.get("user-id")?.value;
   if (!userId) return null;

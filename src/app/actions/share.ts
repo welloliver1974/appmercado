@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { randomBytes } from "crypto";
@@ -13,6 +13,7 @@ interface LowStockItem {
 }
 
 export async function shareShoppingList() {
+  const prisma = await getPrisma();
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) throw new Error("Não autenticado");

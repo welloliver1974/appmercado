@@ -1,6 +1,7 @@
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 
 export async function POST(request: Request) {
+  const prisma = await getPrisma();
   const url = new URL(request.url);
   const origin = url.origin;
 

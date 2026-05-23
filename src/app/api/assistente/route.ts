@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { askAssistant } from "@/lib/ai";
 
 interface ReceiptWithMarket {
@@ -15,6 +15,7 @@ interface MonthlyAgg {
 }
 
 export async function POST(request: Request) {
+  const prisma = await getPrisma();
   const cookieHeader = request.headers.get("cookie") || "";
   const userId = cookieHeader.split(";").find(c => c.startsWith("user-id="))?.split("=")[1];
   if (!userId) return Response.json({ error: "Não autenticado" }, { status: 401 });

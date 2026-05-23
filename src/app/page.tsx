@@ -14,16 +14,17 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { CriticalStockAlert } from "@/components/notifications/CriticalStockAlert";
 import { analyzeSpendingTrend, detectPriceAnomaly } from "@/lib/ai";
 
 export default async function Home() {
+  const prisma = await getPrisma();
   const session = await auth();
   const userId = session?.user?.id;
 
-  if (!userId) redirect("/login");
+  if (!userId) redirect("/");
 
   const recentReceipts = await prisma.receipt.findMany({
     where: { userId },

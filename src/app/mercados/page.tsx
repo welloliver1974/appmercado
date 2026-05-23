@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { Store, Receipt, Plus } from "lucide-react";
@@ -6,6 +6,7 @@ import { AddMarketButton } from "./AddMarketButton";
 import Link from "next/link";
 
 export default async function MercadosPage() {
+  const prisma = await getPrisma();
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) redirect("/login");

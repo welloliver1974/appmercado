@@ -1,8 +1,9 @@
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { ShoppingCart, Clock, Package } from "lucide-react";
 
 export default async function SharedListPage({ params }: { params: Promise<{ token: string }> }) {
+  const prisma = await getPrisma();
   const { token } = await params;
 
   const shared = await prisma.sharedList.findUnique({ where: { token } });

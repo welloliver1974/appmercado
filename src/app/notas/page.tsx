@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { 
   History, 
   Calendar, 
@@ -11,6 +11,7 @@ import { redirect } from "next/navigation";
 import { SearchInput } from "@/components/SearchInput";
 
 export default async function NotasPage(props: { searchParams?: Promise<{ q?: string; mercado?: string }> }) {
+  const prisma = await getPrisma();
   const sp = await props.searchParams;
   const query = sp?.q?.toLowerCase() || "";
   const mercadoId = sp?.mercado || "";

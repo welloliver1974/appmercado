@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { 
   TrendingUp, 
   Tag,
@@ -24,6 +24,7 @@ interface ProductWithItems {
 }
 
 export default async function AnalisePage() {
+  const prisma = await getPrisma();
   const session = await auth();
   const userId = session?.user?.id;
 

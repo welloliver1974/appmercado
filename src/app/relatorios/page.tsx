@@ -1,10 +1,11 @@
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { FileDown, FileText } from "lucide-react";
 import Link from "next/link";
 
 export default async function RelatoriosPage() {
+  const prisma = await getPrisma();
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) redirect("/login");

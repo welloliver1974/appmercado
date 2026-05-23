@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { getPrisma } from "@/lib/prisma";
 import { 
   Package, 
   Plus, 
@@ -12,6 +12,7 @@ import { redirect } from "next/navigation";
 import { SearchInput } from "@/components/SearchInput";
 
 export default async function EstoquePage(props: { searchParams?: Promise<{ q?: string }> }) {
+  const prisma = await getPrisma();
   const sp = await props.searchParams;
   const query = sp?.q?.toLowerCase() || "";
   const session = await auth();
