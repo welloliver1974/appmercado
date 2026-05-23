@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
+import { categorizeProduct } from "@/lib/ai";
 
 export async function saveReceiptAction(data: {
   marketName: string;
@@ -49,10 +50,11 @@ export async function saveReceiptAction(data: {
 
     // 3. Process Items and Update Stock
     for (const item of data.items) {
+      const categoryName = await categorizeProduct(item.name);
       const category = await prisma.category.upsert({
-        where: { name: "Geral" },
+        where: { name: categoryName },
         update: {},
-        create: { name: "Geral" },
+        create: { name: categoryName },
       });
 
       const product = await prisma.product.upsert({

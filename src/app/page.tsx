@@ -9,12 +9,14 @@ import {
   ArrowDownRight,
   MoreVertical,
   Calendar,
-  Sparkles
+  Sparkles,
+  AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { CriticalStockAlert } from "@/components/notifications/CriticalStockAlert";
+import { analyzeSpendingTrend, detectPriceAnomaly } from "@/lib/ai";
 
 export default async function Home() {
   const session = await auth();
@@ -22,7 +24,6 @@ export default async function Home() {
 
   if (!userId) return null;
 
-  // Fetch Real Data filtered by userId
   const recentReceipts = await prisma.receipt.findMany({
     where: { userId },
     take: 3,
@@ -34,22 +35,14 @@ export default async function Home() {
   });
 
   const criticalProducts = await prisma.product.findMany({
-    where: { 
-      userId,
-      stock: { lte: 1 } 
-    },
+    where: { userId, stock: { lte: 1 } },
     take: 4,
     orderBy: { stock: 'asc' }
   });
 
   const totalSpentMonth = await prisma.receipt.aggregate({
     _sum: { totalAmount: true },
-    where: {
-      userId,
-      date: {
-        gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-      }
-    }
+    where: { userId, date: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } }
   });
 
   const totalStockItems = await prisma.product.aggregate({
@@ -71,11 +64,11 @@ export default async function Home() {
   }
   const monthlyArray = Array.from(monthsMap.entries()).sort();
   const lastMonths = monthlyArray.slice(-3);
-  const avgMonthly =
-    lastMonths.length > 0
-      ? lastMonths.reduce((sum, [, v]) => sum + v, 0) / lastMonths.length
-      : 0;
-  const prediction = avgMonthly > 0 ? avgMonthly : totalSpentMonth._sum.totalAmount || 0;
+  const monthlyForAI = lastMonths.map(([m, v]) => ({ month: m, total: v }));
+
+  const trendResult = await analyzeSpendingTrend(monthlyForAI);
+  const prediction = trendResult.prediction > 0 ? trendResult.prediction : totalSpentMonth._sum.totalAmount || 0;
+  const insight = trendResult.insight;
 
   let trend = "estável";
   let trendUp = true;
@@ -84,6 +77,32 @@ export default async function Home() {
     const curr = lastMonths[lastMonths.length - 1][1];
     if (curr > prev * 1.1) { trend = "alta"; trendUp = false; }
     else if (curr < prev * 0.9) { trend = "queda"; trendUp = true; }
+  }
+
+  // Price anomaly detection
+  const productsWithHistory = await prisma.product.findMany({
+    where: { userId },
+    include: {
+      items: {
+        orderBy: { receipt: { date: "desc" } },
+        take: 5,
+        include: { receipt: { select: { date: true } } },
+      }
+    },
+  });
+
+  const anomalies: { name: string; currentPrice: number; reason: string }[] = [];
+  for (const product of productsWithHistory) {
+    if (product.items.length < 2) continue;
+    const priceHistory = product.items.map(i => ({
+      date: i.receipt.date.toISOString(),
+      price: i.unitPrice,
+    }));
+    const currentPrice = priceHistory[0].price;
+    const result = await detectPriceAnomaly(product.name, currentPrice, priceHistory);
+    if (result?.isAnomaly) {
+      anomalies.push({ name: product.name, currentPrice, reason: result.reason });
+    }
   }
 
   const hour = new Date().getHours();
@@ -145,14 +164,22 @@ export default async function Home() {
           icon={<TrendingUp className="h-5 w-5 text-amber-400" />}
           color="bg-amber-500/10"
         />
-        <StatCard 
-          title="Previsão Próx. Mês" 
-          value={`R$ ${prediction.toFixed(2)}`} 
-          trend={trend} 
-          trendUp={trendUp} 
-          icon={<Sparkles className="h-5 w-5 text-purple-400" />}
-          color="bg-purple-500/10"
-        />
+        <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 shadow-sm hover:border-zinc-700 transition-all">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-2 rounded-xl bg-purple-500/10">
+              <Sparkles className="h-5 w-5 text-purple-400" />
+            </div>
+            <div className={`flex items-center text-xs font-bold ${trendUp ? 'text-emerald-400' : 'text-red-400'}`}>
+              {trend}
+              {trendUp ? <ArrowUpRight className="h-3 w-3 ml-1" /> : <ArrowDownRight className="h-3 w-3 ml-1" />}
+            </div>
+          </div>
+          <div>
+            <p className="text-zinc-500 text-xs font-medium uppercase tracking-wider">Previsão Próx. Mês</p>
+            <h4 className="text-2xl font-bold text-white mt-1">R$ {prediction.toFixed(2)}</h4>
+            <p className="text-xs text-zinc-500 mt-1">{insight}</p>
+          </div>
+        </div>
       </div>
 
       {/* Main Content Grid */}
@@ -223,15 +250,38 @@ export default async function Home() {
             </Link>
           </div>
 
+          {anomalies.length > 0 && (
+            <div className="bg-red-900/20 border border-red-700/30 rounded-2xl p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <AlertTriangle className="h-4 w-4 text-red-400" />
+                <h4 className="font-bold text-sm text-red-300">Preços Anormais Detectados</h4>
+              </div>
+              <div className="space-y-2">
+                {anomalies.map((a, i) => (
+                  <div key={i} className="text-xs text-zinc-300 bg-red-950/30 rounded-lg px-3 py-2 flex items-center justify-between">
+                    <span>{a.name}</span>
+                    <span className="text-red-400">{a.reason}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="bg-gradient-to-br from-blue-900 to-zinc-900 p-6 rounded-2xl text-white border border-blue-500/20 shadow-lg relative overflow-hidden group">
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="h-4 w-4 text-blue-400" />
-                <h4 className="font-bold">Dica da IA Gemini</h4>
+                <h4 className="font-bold">Assistente IA</h4>
               </div>
               <p className="text-zinc-300 text-sm leading-relaxed">
-                "O app agora analisa seus preços automaticamente. Confira na aba de Análise de Preços qual mercado está valendo mais a pena!"
+                Tire dúvidas sobre seus gastos, estoque e preços. Vá até o Assistente IA e pergunte!
               </p>
+              <Link
+                href="/assistente"
+                className="mt-3 inline-block text-xs text-blue-400 font-medium hover:text-blue-300 transition-colors"
+              >
+                Abrir Assistente →
+              </Link>
             </div>
             <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
               <TrendingUp className="h-32 w-32 text-blue-400" />

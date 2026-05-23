@@ -232,4 +232,31 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 - Criado `logoutAction` server action que deleta `user-id` e `user-email` e redireciona para `/login`.
 - Sidebar agora usa form com server action em vez de `signOut()`.
 
+---
+
+## ✨ Novas Funcionalidades com IA (23/05/2026)
+
+### Categorização Automática de Produtos
+- `ai.ts`: nova função `categorizeProduct()` que identifica a categoria de um produto pelo nome.
+- Ao salvar uma nota, cada produto recebe categoria automática (Hortifrúti, Laticínios, Carnes, etc.).
+- Cria categorias novas no banco conforme necessário.
+- Fallback para "Geral" se IA não configurada.
+
+### Assistente IA (Chat)
+- Nova página `/assistente` com interface de chat.
+- API route `/api/assistente` que busca dados reais do usuário (gastos, estoque, compras recentes) e envia para IA.
+- Perguntas em linguagem natural: "quanto gastei esse mês?", "qual mercado mais barato?".
+- Fallback amigável se IA não configurada.
+
+### Previsão Inteligente de Gastos
+- Dashboard agora usa IA (`analyzeSpendingTrend`) para analisar tendência dos últimos meses.
+- Se IA não configurada, usa média simples (fallback).
+- Card mostra insight textual explicando a tendência.
+
+### Detecção de Preço Anormal
+- Dashboard analisa produtos com histórico de preços.
+- IA (`detectPriceAnomaly`) identifica variações acima de 15% da média.
+- Card "Preços Anormais" exibe alertas no dashboard.
+- Fallback silencioso se IA não configurada.
+
 *Log atualizado em 23/05/2026*
