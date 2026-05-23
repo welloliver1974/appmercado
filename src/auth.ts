@@ -10,6 +10,12 @@ const { handlers, signIn, signOut } = NextAuth({
   ...authConfig,
   callbacks: {
     ...authConfig.callbacks,
+    async jwt({ token }) {
+      if (token.sub) {
+        (await cookies()).set("user-id", token.sub, { path: "/", httpOnly: true, maxAge: 60 * 60 * 24 * 7 });
+      }
+      return token;
+    },
     async session({ session, token }) {
       if (token.sub && session.user) {
         session.user.id = token.sub;

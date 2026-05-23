@@ -19,7 +19,7 @@ export function CriticalStockAlert({ items }: { items: CriticalItem[] }) {
     if (items.length > 0 && !notified && "Notification" in window && Notification.permission === "granted") {
       new Notification("Estoque Crítico", {
         body: `${items.length} item(ns) estão com estoque baixo!`,
-        icon: "/icon.png",
+        icon: "/icon-192.svg",
       });
       setNotified(true);
     }

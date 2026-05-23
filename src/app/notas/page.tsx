@@ -10,9 +10,10 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { SearchInput } from "@/components/SearchInput";
 
-export default async function NotasPage(props: { searchParams?: Promise<{ q?: string }> }) {
+export default async function NotasPage(props: { searchParams?: Promise<{ q?: string; mercado?: string }> }) {
   const sp = await props.searchParams;
   const query = sp?.q?.toLowerCase() || "";
+  const mercadoId = sp?.mercado || "";
   const session = await auth();
   const userId = session?.user?.id;
 
@@ -31,9 +32,13 @@ export default async function NotasPage(props: { searchParams?: Promise<{ q?: st
     }
   });
 
-  const filtered = query
+  let filtered = query
     ? receipts.filter((r) => r.market.name.toLowerCase().includes(query))
     : receipts;
+
+  if (mercadoId) {
+    filtered = filtered.filter((r) => r.marketId === mercadoId);
+  }
 
   return (
     <div className="p-8 space-y-8 bg-black min-h-screen text-white">
