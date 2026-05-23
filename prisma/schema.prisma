@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Market {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  location  String?
+  receipts  Receipt[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String    @unique
+  products  Product[]
+}
+
+model Product {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  unit        String   // kg, un, L, etc.
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id])
+  stock       Float    @default(0)
+  minStock    Float?
+  items       ReceiptItem[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Receipt {
+  id          String   @id @default(cuid())
+  date        DateTime
+  marketId    String
+  market      Market   @relation(fields: [marketId], references: [id])
+  totalAmount Float
+  items       ReceiptItem[]
+  qrCodeUrl   String?
+  photoUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model ReceiptItem {
+  id         String   @id @default(cuid())
+  receiptId  String
+  receipt    Receipt  @relation(fields: [receiptId], references: [id])
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Float
+  unitPrice  Float
+  totalPrice Float
+}
