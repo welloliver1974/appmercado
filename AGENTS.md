@@ -39,7 +39,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - `/offline` — Fallback offline PWA
 
 ### IA (src/lib/ai.ts)
-- `processReceiptImage` — Ler foto da nota (OpenRouter/Groq)
+- `processReceiptImage` — Ler foto da nota (OpenRouter/Groq, apenas server-side)
 - `categorizeProduct` — Classificar produto em categoria
 - `askAssistant` — Chat com dados do usuário
 - `analyzeSpendingTrend` — Previsão de gastos
@@ -64,7 +64,6 @@ DATABASE_URL="file:./dev.db"
 OPENROUTER_API_KEY=  # opcional, para IA
 GROQ_API_KEY=        # opcional, alternativa OpenRouter
 NEXT_PUBLIC_AI_PROVIDER=openrouter  # ou groq
-# BRAVE_API_KEY obsoleta — busca preço usa DuckDuckGo HTML search (gratuito, sem key)
 ```
 
 ## Próximos Passos Possíveis

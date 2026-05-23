@@ -303,4 +303,19 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 - `prisma` movido para `devDependencies`.
 - Ícones não usados removidos: `Store` (notas), `Package` (lista-compras), `ArrowUp`/`Store` (analise — só os que não eram usados foram removidos).
 
+---
+
+## 🔧 Últimas Correções (23/05/2026 — noite)
+
+### Segurança
+- `ai.ts`: removido `dangerouslyAllowBrowser: true` — API key não vaza mais pro bundle do navegador.
+
+### Estabilidade
+- `finalizarComprasAction` agora retorna `{ error }` em vez de `throw new Error()` — não quebra a UI se der falha.
+- `SearchInput.tsx`: separado em `SearchInputInner` + `Suspense` wrapper — evita Warning do `useSearchParams()` no SSR.
+
+### Limpeza
+- `auth.config.ts`: removido callback `authorized` morto (nunca era executado sem middleware do NextAuth).
+- `auth.ts`: removido spread de `authConfig.callbacks` que não existia mais.
+
 *Log atualizado em 23/05/2026*
