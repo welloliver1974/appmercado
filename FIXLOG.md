@@ -170,7 +170,9 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 
 ### Página /config
 - Criada página de configurações com informações da conta e instruções PWA.
-- Formulário de alteração de nome usando API route (`/api/config/name`) via fetch.
+- Formulário de alteração de nome: HTML nativo POST para `/api/update-name`.
+- API route lê cookie manualmente do header (sem depender de `auth()`).
+- Retorna redirect 302 para `/config` após atualizar.
 
 ### Dashboard
 - Saudação dinâmica (Bom dia / Boa tarde / Boa noite).
