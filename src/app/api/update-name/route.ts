@@ -12,15 +12,14 @@ export async function POST(request: Request) {
     ?.split("=")[1];
 
   if (!userId) {
-    console.log("[debug] cookie header raw:", cookieHeader);
-    return Response.redirect(`${origin}/config?erro=${encodeURIComponent("cookie: " + cookieHeader)}`, 302);
+    return Response.redirect(`${origin}/config?erro=login`, 302);
   }
 
   const text = await request.text();
   const params = new URLSearchParams(text);
   const name = params.get("name");
   if (!name || !name.trim()) {
-    return Response.redirect(`${origin}/config?erro=nome-invalido`, 302);
+    return Response.redirect(`${origin}/config?erro=nome`, 302);
   }
 
   await prisma.user.update({ where: { id: userId }, data: { name: name.trim() } });

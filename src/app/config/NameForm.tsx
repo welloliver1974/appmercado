@@ -22,7 +22,7 @@ export function NameForm({ currentName }: { currentName: string }) {
   }
 
   return (
-    <form action="/api/config/name" method="POST" className="flex items-center gap-2">
+    <form action="/api/update-name" method="POST" className="flex items-center gap-2">
       <input
         name="name"
         defaultValue={currentName}
