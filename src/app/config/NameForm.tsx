@@ -1,21 +1,27 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { updateName } from "./actions";
+import { useState } from "react";
 import { Edit3, Check, Loader2 } from "lucide-react";
 
 export function NameForm({ currentName }: { currentName: string }) {
   const [editing, setEditing] = useState(false);
   const [pending, setPending] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setPending(true);
     const form = new FormData(e.target as HTMLFormElement);
-    const result = await updateName({}, form);
-    if (result?.success) {
+    const name = form.get("name") as string;
+
+    const res = await fetch("/api/config/name", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+
+    if (res.ok) {
       setEditing(false);
+      window.location.reload();
     }
     setPending(false);
   }
@@ -33,7 +39,7 @@ export function NameForm({ currentName }: { currentName: string }) {
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="flex items-center gap-2">
+    <form onSubmit={handleSubmit} className="flex items-center gap-2">
       <input
         name="name"
         defaultValue={currentName}

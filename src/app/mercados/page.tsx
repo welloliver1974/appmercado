@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
-import { Store, Receipt, ShoppingCart } from "lucide-react";
+import { Store, Receipt, Plus } from "lucide-react";
+import { AddMarketButton } from "./AddMarketButton";
 import Link from "next/link";
 
 export default async function MercadosPage() {
@@ -22,18 +23,21 @@ export default async function MercadosPage() {
 
   return (
     <div className="p-8 space-y-8 bg-black min-h-screen text-white">
-      <div className="flex items-center gap-3">
-        <Store className="h-8 w-8 text-blue-500" />
-        <div>
-          <h1 className="text-3xl font-bold">Mercados</h1>
-          <p className="text-zinc-400 text-sm">Todos os mercados onde você compra</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Store className="h-8 w-8 text-blue-500" />
+          <div>
+            <h1 className="text-3xl font-bold">Mercados</h1>
+            <p className="text-zinc-400 text-sm">Todos os mercados onde você compra</p>
+          </div>
         </div>
+        <AddMarketButton />
       </div>
 
       {markets.length === 0 ? (
         <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-12 text-center">
           <Store className="h-12 w-12 text-zinc-600 mx-auto mb-4" />
-          <p className="text-zinc-500">Nenhum mercado cadastrado. Adicione uma nota para criar um.</p>
+          <p className="text-zinc-500">Nenhum mercado cadastrado ainda.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -42,12 +46,7 @@ export default async function MercadosPage() {
             return (
               <div key={market.id} className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-4 hover:border-blue-500/30 transition-all">
                 <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-bold text-lg text-white">{market.name}</h3>
-                    {market.location && (
-                      <p className="text-xs text-zinc-500">{market.location}</p>
-                    )}
-                  </div>
+                  <h3 className="font-bold text-lg text-white">{market.name}</h3>
                   <div className="p-2 bg-blue-500/10 rounded-lg">
                     <Store className="h-5 w-5 text-blue-500" />
                   </div>
@@ -71,7 +70,7 @@ export default async function MercadosPage() {
                   href={`/notas?mercado=${market.id}`}
                   className="block w-full text-center py-2 text-sm text-blue-400 font-medium hover:text-blue-300 transition-colors rounded-lg hover:bg-blue-500/5"
                 >
-                  Ver notas deste mercado →
+                  Ver notas →
                 </Link>
               </div>
             );
