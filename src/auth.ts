@@ -1,28 +1,5 @@
-import NextAuth from "next-auth";
-import { PrismaAdapter } from "@auth/prisma-adapter";
 import { prisma } from "@/lib/prisma";
-import { authConfig } from "./auth.config";
 import { cookies } from "next/headers";
-
-const { handlers, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma),
-  session: { strategy: "jwt" },
-  ...authConfig,
-  callbacks: {
-    async jwt({ token }) {
-      if (token.sub) {
-        (await cookies()).set("user-id", token.sub, { path: "/", httpOnly: true, maxAge: 60 * 60 * 24 * 7 });
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (token.sub && session.user) {
-        session.user.id = token.sub;
-      }
-      return session;
-    },
-  },
-});
 
 async function auth(): Promise<{ user: { id: string; name: string | null; email: string | null } } | null> {
   const cookieStore = await cookies();
@@ -33,4 +10,4 @@ async function auth(): Promise<{ user: { id: string; name: string | null; email:
   return { user: { id: user.id, name: user.name, email: user.email } };
 }
 
-export { handlers, auth, signIn, signOut };
+export { auth };

@@ -47,6 +47,17 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - `priceSearch.ts` — Buscar preço online via DuckDuckGo HTML search + filtro de domínios de e-commerce brasileiros (gratuito, sem API key)
 - Todas com fallback se API key não configurada
 
+### Cloudflare Deploy
+- `npm run deploy` executa `opennextjs-cloudflare build && opennextjs-cloudflare deploy`
+- Build local: `npx next build` (sem `--turbo`)
+- Middleware: `src/middleware.ts` (Edge runtime, necessário para Cloudflare)
+- Prisma adapter: `@prisma/adapter-libsql` + `@libsql/client` com lazy init via Proxy
+- Database: SQLite local (`file:./dev.db`) — não D1
+- Worker size limit: 3 MiB (free tier)
+
+### Packages Removidos
+- next-auth, @auth/prisma-adapter, @simplewebauthn/server, @simplewebauthn/browser (login só por senha)
+
 ### PWA
 - `public/manifest.json` com ícones .svg
 - `public/sw.js` com cache e falloffline
