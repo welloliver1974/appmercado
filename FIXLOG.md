@@ -90,13 +90,23 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 ### 2. Middleware renomeado para Proxy (Next.js 16)
 - O arquivo `middleware.ts` foi renomeado para `proxy.ts` conforme nova convenção do Next.js 16.
 
+### 3. Login sem biometria (Notebook)
+- **Problema**: Notebook não tem biometria, mas o login só oferecia "Entrar com Biometria".
+- **Solução**:
+  - Adicionado provider `Credentials` em `auth.config.ts` com senha compartilhada via `.env` (`AUTH_PASSWORD`).
+  - Tela de login agora tem abas "Digital" e "Senha" para alternar entre os métodos.
+  - Detecta suporte a WebAuthn (`window.PublicKeyCredential`) e exibe mensagem apropriada.
+  - Se o navegador não suportar biometria, a aba Digital ainda aparece mas com aviso para usar Senha.
+
 ---
 
 ## 🔐 Autenticação - Como Funciona
-- **Provider**: Passkey (WebAuthn) via `next-auth/providers/passkey`
+- **Provider 1**: Passkey (WebAuthn) via `next-auth/providers/passkey` — para celular com biometria
+- **Provider 2**: Credentials (senha) via `next-auth/providers/credentials` — fallback para notebook
 - **Biometria**: O Auth.js gerencia o cerimonial completo — registro e login via fingerprint/FaceID
+- **Senha**: Senha compartilhada definida em `AUTH_PASSWORD` no `.env` (para uso pessoal)
 - **Sessão**: JWT (obrigatório para compatibilidade com Prisma sem Edge)
 - **Middleware/Proxy**: Apenas verifica se há sessão JWT válida, sem precisar do adapter de banco
-- **Login**: Tela em `/login` coleta e-mail e dispara `signIn("passkey", { email })` que ativa o prompt de biometria do navegador/dispositivo
+- **Login**: Tela em `/login` com abas para escolher entre Digital (biometria) e Senha (credenciais)
 
 *Log gerado em 22/05/2026*
