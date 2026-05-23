@@ -1,12 +1,16 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, useEffect } from "react";
 import { updateName } from "./actions";
-import { Edit3, Check, Loader2 } from "lucide-react";
+import { Edit3, Check, Loader2, X } from "lucide-react";
 
 export function NameForm({ currentName }: { currentName: string }) {
   const [editing, setEditing] = useState(false);
   const [state, action, pending] = useActionState(updateName, {});
+
+  useEffect(() => {
+    if (state?.success) setEditing(false);
+  }, [state]);
 
   if (!editing) {
     return (
@@ -39,8 +43,9 @@ export function NameForm({ currentName }: { currentName: string }) {
       <button
         type="button"
         onClick={() => setEditing(false)}
-        className="text-sm text-zinc-500 hover:text-zinc-400"
+        className="p-2 text-zinc-500 hover:text-zinc-400 rounded-lg hover:bg-zinc-800 transition-colors"
       >
+        Cancelar
       </button>
     </form>
   );
