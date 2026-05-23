@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { auth } from "@/auth";
 import { ShareListButton } from "@/components/ShareListButton";
+import { FinalizarComprasButton } from "@/components/FinalizarComprasButton";
 
 export default async function ListaComprasPage() {
   const session = await auth();
@@ -115,9 +116,7 @@ export default async function ListaComprasPage() {
               </p>
             </div>
 
-            <button className="w-full py-4 bg-white text-black rounded-xl font-black hover:bg-zinc-200 transition-all shadow-lg shadow-white/5">
-              FINALIZAR COMPRAS
-            </button>
+            <FinalizarComprasButton />
           </div>
         </div>
       </div>

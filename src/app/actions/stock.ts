@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 
 export async function updateStockAction(productId: string, quantity: number) {
@@ -20,6 +21,21 @@ export async function updateStockAction(productId: string, quantity: number) {
     console.error("Erro ao atualizar estoque:", error);
     throw new Error("Falha ao atualizar estoque");
   }
+}
+
+export async function finalizarComprasAction() {
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) throw new Error("Não autenticado");
+
+  await prisma.product.updateMany({
+    where: { userId, stock: { lte: 1 } },
+    data: { stock: 5 },
+  });
+
+  revalidatePath("/lista-compras");
+  revalidatePath("/");
+  revalidatePath("/estoque");
 }
 
 export async function deleteProductAction(productId: string) {

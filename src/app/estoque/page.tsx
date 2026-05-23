@@ -1,17 +1,18 @@
 import { prisma } from "@/lib/prisma";
 import { 
   Package, 
-  Search, 
   Plus, 
   Minus, 
   Trash2, 
-  AlertTriangle,
-  Filter
+  AlertTriangle
 } from "lucide-react";
 import { updateStockAction, deleteProductAction } from "@/app/actions/stock";
 import { auth } from "@/auth";
+import { SearchInput } from "@/components/SearchInput";
 
-export default async function EstoquePage() {
+export default async function EstoquePage(props: { searchParams?: Promise<{ q?: string }> }) {
+  const sp = await props.searchParams;
+  const query = sp?.q?.toLowerCase() || "";
   const session = await auth();
   const userId = session?.user?.id;
 
@@ -38,6 +39,10 @@ export default async function EstoquePage() {
     }
   });
 
+  const filtered = query
+    ? products.filter((p) => p.name.toLowerCase().includes(query))
+    : products;
+
   return (
     <div className="p-8 space-y-8 bg-black min-h-screen text-white">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -48,19 +53,7 @@ export default async function EstoquePage() {
           </h1>
           <p className="text-zinc-400 text-sm mt-1">Gerencie as quantidades e validade dos seus produtos.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-            <input 
-              type="text" 
-              placeholder="Buscar produto..." 
-              className="bg-zinc-900 border border-zinc-800 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all w-64"
-            />
-          </div>
-          <button className="p-2 bg-zinc-900 border border-zinc-800 rounded-lg text-zinc-400 hover:text-white transition-colors">
-            <Filter className="h-5 w-5" />
-          </button>
-        </div>
+        <SearchInput placeholder="Buscar produto..." />
       </div>
 
       <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-xl">
@@ -76,14 +69,14 @@ export default async function EstoquePage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-800">
-            {products.length === 0 ? (
+            {filtered.length === 0 ? (
               <tr>
                 <td colSpan={6} className="p-12 text-center text-zinc-500 italic">
-                  Nenhum produto cadastrado. Adicione uma nota fiscal para começar!
+                  {query ? "Nenhum produto encontrado." : "Nenhum produto cadastrado. Adicione uma nota fiscal para começar!"}
                 </td>
               </tr>
             ) : (
-              products.map((product: any) => (
+              filtered.map((product: any) => (
                 <ProductRow key={product.id} product={product} />
               ))
             )}
@@ -98,7 +91,6 @@ function ProductRow({ product }: { product: any }) {
   const lastItem = product.items[0];
   const isLowStock = product.stock <= (product.minStock || 1);
 
-  // Criamos funções que chamam as server actions
   async function handleDecrement() {
     "use server";
     await updateStockAction(product.id, -1);
