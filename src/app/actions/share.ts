@@ -5,12 +5,19 @@ import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 import { randomBytes } from "crypto";
 
+interface LowStockItem {
+  name: string;
+  category: { name: string };
+  stock: number;
+  unit: string;
+}
+
 export async function shareShoppingList() {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) throw new Error("Não autenticado");
 
-  const lowStockProducts = await prisma.product.findMany({
+  const lowStockProducts: LowStockItem[] = await prisma.product.findMany({
     where: { userId, stock: { lte: 1 } },
     include: { category: true },
     orderBy: { name: "asc" },

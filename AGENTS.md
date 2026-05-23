@@ -10,7 +10,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## Premissas
 - App pessoal, senha compartilhada via `AUTH_PASSWORD` no .env
 - Login: server action manual seta cookies `user-id` e `user-email` (7 dias)
-- Middleware (`src/middleware.ts`) verifica cookie `user-id` diretamente (NÃO usa NextAuth session)
+- Middleware (`src/proxy.ts`) verifica cookie `user-id` diretamente (NÃO usa NextAuth session)
 - `auth()` em `src/auth.ts` lê cookie e busca user no banco (função customizada, não NextAuth)
 - Todas API routes e server actions verificam `auth()` com escopo por `userId`
 - Prisma v7 com `@prisma/adapter-libsql` + `@libsql/client` — URL do banco usa `path.resolve` + prefixo `file:`

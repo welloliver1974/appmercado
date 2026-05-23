@@ -317,5 +317,7 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 ### Limpeza
 - `auth.config.ts`: removido callback `authorized` morto (nunca era executado sem middleware do NextAuth).
 - `auth.ts`: removido spread de `authConfig.callbacks` que não existia mais.
+- `proxy.ts` restaurado: Next.js 16 requer `proxy.ts`, não `middleware.ts`.
+- `share.ts`: adicionado tipo explícito `LowStockItem` pro parâmetro do `.map()`.
 
 *Log atualizado em 23/05/2026*
