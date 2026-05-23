@@ -41,7 +41,7 @@ export default async function EstoquePage(props: { searchParams?: Promise<{ q?: 
   });
 
   const filtered = query
-    ? products.filter((p) => p.name.toLowerCase().includes(query))
+    ? products.filter((p: typeof products[number]) => p.name.toLowerCase().includes(query))
     : products;
 
   return (
