@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { revalidatePath } from "next/cache";
 
-export async function updateName(_prevState: unknown, formData: FormData) {
+export async function updateName(formData: FormData) {
   const session = await auth();
   const userId = session?.user?.id;
   if (!userId) return { error: "Não autenticado" };
