@@ -15,7 +15,8 @@ export async function authenticate(_prevState: unknown, formData: FormData) {
 
   let user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
-    user = await prisma.user.create({ data: { email } });
+    const name = email.split("@")[0];
+    user = await prisma.user.create({ data: { email, name } });
   }
 
   const cookieStore = await cookies();

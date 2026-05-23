@@ -86,13 +86,17 @@ export default async function Home() {
     else if (curr < prev * 0.9) { trend = "queda"; trendUp = true; }
   }
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite";
+  const displayName = session.user?.name || session.user?.email?.split("@")[0] || "User";
+
   return (
     <div className="p-8 space-y-8 bg-black min-h-screen text-white">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            Bom dia, {session.user?.name || 'User'}! 👋
+            {greeting}, {displayName}! 👋
           </h2>
           <p className="text-zinc-400 text-sm">Aqui está o resumo das suas compras este mês.</p>
         </div>
