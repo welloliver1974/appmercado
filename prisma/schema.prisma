@@ -9,13 +9,96 @@ datasource db {
   provider = "sqlite"
 }
 
-model Market {
-  id        String   @id @default(cuid())
-  name      String   @unique
-  location  String?
-  receipts  Receipt[]
+// Auth.js Models
+model User {
+  id            String          @id @default(cuid())
+  name          String?
+  email         String?         @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  // Optional for WebAuthn support
+  Authenticator Authenticator[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // App Data Relation
+  receipts  Receipt[]
+  markets   Market[]
+  products  Product[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// Optional for WebAuthn support
+model Authenticator {
+  credentialID         String  @unique
+  userId               String
+  providerAccountId    String
+  credentialPublicKey  String
+  counter              Int
+  credentialDeviceType String
+  credentialBackedUp   Boolean
+  transports           String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, credentialID])
+}
+
+// App Models
+model Market {
+  id        String   @id @default(cuid())
+  name      String
+  location  String?
+  receipts  Receipt[]
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, userId])
 }
 
 model Category {
@@ -26,15 +109,19 @@ model Category {
 
 model Product {
   id          String   @id @default(cuid())
-  name        String   @unique
+  name        String
   unit        String   // kg, un, L, etc.
   categoryId  String
   category    Category @relation(fields: [categoryId], references: [id])
   stock       Float    @default(0)
   minStock    Float?
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
   items       ReceiptItem[]
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@unique([name, userId])
 }
 
 model Receipt {
@@ -42,6 +129,8 @@ model Receipt {
   date        DateTime
   marketId    String
   market      Market   @relation(fields: [marketId], references: [id])
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
   totalAmount Float
   items       ReceiptItem[]
   qrCodeUrl   String?

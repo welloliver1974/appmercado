@@ -13,10 +13,17 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 
 export default async function Home() {
-  // Fetch Real Data
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  if (!userId) return null;
+
+  // Fetch Real Data filtered by userId
   const recentReceipts = await prisma.receipt.findMany({
+    where: { userId },
     take: 3,
     orderBy: { date: 'desc' },
     include: { 
@@ -26,7 +33,10 @@ export default async function Home() {
   });
 
   const criticalProducts = await prisma.product.findMany({
-    where: { stock: { lte: 1 } },
+    where: { 
+      userId,
+      stock: { lte: 1 } 
+    },
     take: 4,
     orderBy: { stock: 'asc' }
   });
@@ -34,6 +44,7 @@ export default async function Home() {
   const totalSpentMonth = await prisma.receipt.aggregate({
     _sum: { totalAmount: true },
     where: {
+      userId,
       date: {
         gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
       }
@@ -41,7 +52,8 @@ export default async function Home() {
   });
 
   const totalStockItems = await prisma.product.aggregate({
-    _sum: { stock: true }
+    _sum: { stock: true },
+    where: { userId }
   });
 
   return (
@@ -50,7 +62,7 @@ export default async function Home() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            Bom dia! 👋
+            Bom dia, {session.user?.name || 'User'}! 👋
           </h2>
           <p className="text-zinc-400 text-sm">Aqui está o resumo das suas compras este mês.</p>
         </div>

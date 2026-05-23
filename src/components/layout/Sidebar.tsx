@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -37,7 +38,10 @@ export function Sidebar() {
 
       <div className="p-4 border-t border-zinc-800 bg-black space-y-2">
         <NavItem href="/config" icon={<Settings />} label="Configurações" active={pathname === "/config"} />
-        <button className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-400 rounded-lg hover:bg-red-500/10 transition-colors">
+        <button 
+          onClick={() => signOut({ callbackUrl: "/login" })}
+          className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
+        >
           <LogOut className="h-4 w-4" />
           Sair
         </button>

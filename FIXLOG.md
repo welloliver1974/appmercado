@@ -8,9 +8,10 @@ O AppMercado é um web app completo para gerenciamento de compras de supermercad
 ---
 
 ## 🛠️ Tecnologias Utilizadas
-- **Framework**: Next.js 15 (App Router)
+- **Framework**: Next.js 16 (App Router)
 - **Estilização**: Tailwind CSS (Tema Dark Premium: Preto e Azul)
-- **Banco de Dados**: SQLite com Prisma ORM
+- **Banco de Dados**: SQLite com Prisma ORM v7
+- **Autenticação**: Auth.js v5 (next-auth) com Passkeys (WebAuthn/biometria)
 - **IA/Visão**: OpenRouter / Groq (Modelo Llama 3.2 Vision)
 - **Ícones**: Lucide React
 
@@ -73,4 +74,29 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 - `NEXT_PUBLIC_AI_PROVIDER` (definido como 'openrouter' ou 'groq')
 
 ---
+---
+
+## 🐛 Correções de Bugs (22/05/2026)
+
+### 1. Login com biometria quebrado (Passkey + WebAuthn)
+- **Causa**: O `middleware.ts` criava instância separada do Auth.js **sem o PrismaAdapter**, mas o WebAuthn exige adapter → `MissingAdapter` error na inicialização.
+- **Causa 2**: O login usava `signIn` de `"next-auth/react"`, que não executa o fluxo WebAuthn (não ativa fingerprint/FaceID).
+- **Causa 3**: Prisma v7 mudou o engine padrão para `"client"`, que exige um driver adapter no `PrismaClient` — o `new PrismaClient()` simples parou de funcionar.
+- **Solução**:
+  - `src/proxy.ts`: Config separada sem provider Passkey (middleware não precisa de adapter).
+  - `src/app/login/page.tsx`: Import `signIn` trocado para `"next-auth/webauthn"`.
+  - `src/lib/prisma.ts`: Instalado `@prisma/adapter-libsql` + `@libsql/client` para adaptar o SQLite ao Prisma v7.
+
+### 2. Middleware renomeado para Proxy (Next.js 16)
+- O arquivo `middleware.ts` foi renomeado para `proxy.ts` conforme nova convenção do Next.js 16.
+
+---
+
+## 🔐 Autenticação - Como Funciona
+- **Provider**: Passkey (WebAuthn) via `next-auth/providers/passkey`
+- **Biometria**: O Auth.js gerencia o cerimonial completo — registro e login via fingerprint/FaceID
+- **Sessão**: JWT (obrigatório para compatibilidade com Prisma sem Edge)
+- **Middleware/Proxy**: Apenas verifica se há sessão JWT válida, sem precisar do adapter de banco
+- **Login**: Tela em `/login` coleta e-mail e dispara `signIn("passkey", { email })` que ativa o prompt de biometria do navegador/dispositivo
+
 *Log gerado em 22/05/2026*

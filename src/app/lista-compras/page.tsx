@@ -8,12 +8,19 @@ import {
   Package,
   AlertCircle
 } from "lucide-react";
+import { auth } from "@/auth";
 
 export default async function ListaComprasPage() {
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  if (!userId) return null;
+
   const lowStockProducts = await prisma.product.findMany({
     where: {
+      userId,
       stock: {
-        lte: 1 // Usando 1 como padrão para estoque baixo por enquanto
+        lte: 1
       }
     },
     include: {

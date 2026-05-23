@@ -8,9 +8,16 @@ import {
   Store,
   Tag
 } from "lucide-react";
+import { auth } from "@/auth";
 
 export default async function AnalisePage() {
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  if (!userId) return null;
+
   const products = await prisma.product.findMany({
+    where: { userId },
     include: {
       items: {
         include: {

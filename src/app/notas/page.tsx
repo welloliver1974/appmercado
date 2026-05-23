@@ -8,9 +8,16 @@ import {
   FileText
 } from "lucide-react";
 import Link from "next/link";
+import { auth } from "@/auth";
 
 export default async function NotasPage() {
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  if (!userId) return null;
+
   const receipts = await prisma.receipt.findMany({
+    where: { userId },
     include: {
       market: true,
       _count: {

@@ -9,9 +9,16 @@ import {
   Filter
 } from "lucide-react";
 import { updateStockAction, deleteProductAction } from "@/app/actions/stock";
+import { auth } from "@/auth";
 
 export default async function EstoquePage() {
+  const session = await auth();
+  const userId = session?.user?.id;
+
+  if (!userId) return null;
+
   const products = await prisma.product.findMany({
+    where: { userId },
     include: {
       category: true,
       items: {
