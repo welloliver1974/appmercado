@@ -10,19 +10,19 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## Premissas
 - App pessoal, senha compartilhada via `AUTH_PASSWORD` no .env
 - Login: server action manual seta cookies `user-id` e `user-email` (7 dias)
-- Middleware (`src/proxy.ts`) verifica cookie `user-id` diretamente (NÃO usa NextAuth session)
-- `auth()` em `src/auth.ts` lê cookie e busca user no banco (função customizada, não NextAuth)
+- Middleware (`src/middleware.ts`) verifica cookie `user-id` diretamente (Edge runtime)
+- `auth()` em `src/auth.ts` lê cookie e busca user no banco (função customizada, sem NextAuth)
 - Todas API routes e server actions verificam `auth()` com escopo por `userId`
-- Prisma v7 com `@prisma/adapter-libsql` + `@libsql/client` — URL do banco usa `path.resolve` + prefixo `file:`
-- Usar `npx prisma db push` para sincronizar schema (migration regenerada em 23/05)
-- Next.js 16 com Turbopack (`--turbo`)
+- Prisma v7 com lazy init via Proxy — usa `@prisma/adapter-d1` no Cloudflare, `@prisma/adapter-libsql` local
+- Database: Cloudflare D1 (produção) / SQLite local `file:./dev.db` (desenvolvimento)
+- Next.js 16 com Turbopack
 
 ## Funcionalidades Implementadas
 
 ### Autenticação
-- Login com senha (server action → cookies manuais) — funciona
-- Login Digital (Passkey/WebAuthn) — corrigido via `jwt` callback que também seta cookie `user-id`
+- Login com senha (server action → cookies manuais) — único método
 - Logout — `logoutAction` deleta cookies e redireciona
+- Passkey/WebAuthn removido (pesava o bundle, login por senha cobre tudo)
 
 ### Páginas
 - `/` — Dashboard com gastos, estoque, previsão IA, alertas preço anormal, dicas
@@ -44,19 +44,21 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - `askAssistant` — Chat com dados do usuário
 - `analyzeSpendingTrend` — Previsão de gastos
 - `detectPriceAnomaly` — Alertar preço fora da média
-- `priceSearch.ts` — Buscar preço online via DuckDuckGo HTML search + filtro de domínios de e-commerce brasileiros (gratuito, sem API key)
+- `priceSearch.ts` — Busca preço online via DuckDuckGo HTML search + filtro de domínios de e-commerce brasileiros
 - Todas com fallback se API key não configurada
 
 ### Cloudflare Deploy
 - `npm run deploy` executa `opennextjs-cloudflare build && opennextjs-cloudflare deploy`
-- Build local: `npx next build` (sem `--turbo`)
+- `npm run build` executa `next build` (OpenNext já chama build internamente)
 - Middleware: `src/middleware.ts` (Edge runtime, necessário para Cloudflare)
-- Prisma adapter: `@prisma/adapter-libsql` + `@libsql/client` com lazy init via Proxy
-- Database: SQLite local (`file:./dev.db`) — não D1
-- Worker size limit: 3 MiB (free tier)
+- Prisma adapter: `@prisma/adapter-d1` (Cloudflare) / `@prisma/adapter-libsql` (local), lazy init via Proxy
+- Database: Cloudflare D1 (produção, binding `appmercado_db`) / SQLite local (desenvolvimento, `file:./dev.db`)
+- Worker size: ~700 KiB gzip (dentro do limite free de 3 MiB)
+- Configs versionadas: `wrangler.jsonc`, `open-next.config.ts`, `public/_headers`
 
 ### Packages Removidos
-- next-auth, @auth/prisma-adapter, @simplewebauthn/server, @simplewebauthn/browser (login só por senha)
+- next-auth, @auth/prisma-adapter, @simplewebauthn/server, @simplewebauthn/browser — login só por senha
+- @google/generative-ai, better-sqlite3, clsx, date-fns, tailwind-merge — não usados
 
 ### PWA
 - `public/manifest.json` com ícones .svg
@@ -77,12 +79,19 @@ GROQ_API_KEY=        # opcional, alternativa OpenRouter
 NEXT_PUBLIC_AI_PROVIDER=openrouter  # ou groq
 ```
 
-## Próximos Passos Possíveis
-- Configurar chaves de IA (OpenRouter/Groq)
-- Melhorias sugeridas pelo usuário (perguntar)
+## Secrets Cloudflare (setar via `wrangler secret put` ou dashboard)
+```
+AUTH_PASSWORD=
+AUTH_SECRET=
+OPENROUTER_API_KEY=  # opcional
+GROQ_API_KEY=        # opcional
+```
 
 ## Observações Técnicas
 - `module.register()` deprecation warning do Turbopack — inofensivo
-- HMR warning resolved via `allowedDevOrigins` no next.config.ts
-- Build: `npx next build` (sem `--turbo` para build de produção)
+- HMR warning resolvido via `allowedDevOrigins` no next.config.ts
+- Build local: `npx next build` (sem `--turbo` para build de produção)
+- D1 database: `appmercado-db` (ID `531c28d7-acff-4e8d-a8d0-4d42a6e98ba6`)
+- Migração D1: `npx wrangler d1 execute appmercado-db --remote --file=prisma/migrations/xxx/migration.sql`
+- Deploy falha se `database_id` no `wrangler.jsonc` não corresponder ao D1 real
 <!-- END:project-memory -->

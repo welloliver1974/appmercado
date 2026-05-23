@@ -321,3 +321,68 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 - `share.ts`: adicionado tipo explícito `LowStockItem` pro parâmetro do `.map()`.
 
 *Log atualizado em 23/05/2026*
+
+---
+
+## 🚀 Deploy Cloudflare — Crônica de uma Madrugada (23/05/2026)
+
+### O Desafio
+Fazer o deploy do app no Cloudflare Workers (free tier, limite 3 MiB) com Next.js 16, OpenNext e Prisma v7.
+
+### Problema 1: postinstall sem prisma generate
+- Cloudflare faz `npm clean-install`, não roda `prisma generate`.
+- `@prisma/client` sem tipos → build quebra com `Module '"@prisma/client"' has no exported member 'PrismaClient'`.
+- **Solução**: `"postinstall": "prisma generate"` no package.json.
+
+### Problema 2: DATABASE_URL durante o build
+- `prisma.ts` executava `process.env.DATABASE_URL!.replace(...)` no escopo do módulo.
+- Durante `next build` no Cloudflare, `DATABASE_URL` não está definida → `.replace()` em `undefined`.
+- **Solução**: Prisma client virou um **Proxy** — lazy initialization, só cria na primeira chamada.
+
+### Problema 3: proxy.ts roda Node.js, Cloudflare rejeita
+- Next.js 16: `proxy.ts` sempre roda em Node.js. Cloudflare Workers não suporta.
+- OpenNext: `ERROR Node.js middleware is not currently supported. Consider switching to Edge Middleware.`
+- **Solução**: Trocar `proxy.ts` → `middleware.ts` (depreciado, mas roda Edge runtime).
+- O erro `export const runtime = "edge"` não funciona em proxy.ts, mas middleware.ts já usa Edge por padrão.
+
+### Problema 4: Worker excede 3 MiB
+- `handler.mjs` com 14 MB uncompressed → 3.7 MiB gzip (limite: 3 MiB).
+- Culpados: `next-auth`, `@simplewebauthn`, `@libsql/client` (better-sqlite3 nativo).
+- **Solução**: Remover `next-auth`, `@auth/prisma-adapter`, `@simplewebauthn/browser`, `@simplewebauthn/server`.
+- Login simplificado para apenas senha (server action manual).
+- `auth.ts` reescrito — só a função customizada, sem NextAuth.
+- Worker final: ~700 KiB gzip.
+
+### Problema 5: Build script entra em loop infinito
+- `npm run deploy` → `opennextjs-cloudflare build` → `npm run build` → `next build && opennextjs-cloudflare build` → loop.
+- `opennextjs-cloudflare build` já chama `npm run build` internamente.
+- **Solução**: `"build": "next build"` (sem `&& opennextjs-cloudflare build`).
+
+### Problema 6: SQLite local não funciona no Cloudflare
+- `file:./dev.db` é arquivo local. Cloudflare Workers não tem filesystem persistente.
+- `@libsql/client` depende de `better-sqlite3` (binding nativo, não roda no Workers).
+- **Solução**: Migrar para **Cloudflare D1** (SQLite gerenciado, gratuito, nativo).
+- Instalar `@prisma/adapter-d1@7.9.0-dev.6`.
+- `getCloudflareContext().env.appmercado_db` — OpenNext expõe bindings via `getCloudflareContext()`.
+- `prisma.ts`: se `DATABASE_URL` existir → libsql (local), senão → D1 (Cloudflare).
+- Criar D1: `npx wrangler d1 create appmercado-db`.
+- Migrar schema: `npx wrangler d1 execute appmercado-db --remote --file=prisma/migrations/xxx/migration.sql`.
+- Binding: `appmercado_db`.
+
+### Resultado Final
+- URL: https://appmercado.welloliver.workers.dev
+- Worker: 702 KiB gzip
+- Startup: 28 ms
+- D1 Database conectado
+- IA funcionando (OpenRouter)
+- Secrets: AUTH_PASSWORD, AUTH_SECRET, OPENROUTER_API_KEY, GROQ_API_KEY
+
+### Arquivos Criados/Modificados
+- `src/middleware.ts` — Edge middleware (substitui proxy.ts)
+- `src/lib/prisma.ts` — Prisma client lazy via Proxy, suporte D1 + libsql
+- `src/auth.ts` — função customizada sem NextAuth
+- `wrangler.jsonc` — config Cloudflare com D1 binding
+- `open-next.config.ts` — config OpenNext Cloudflare
+- `public/_headers` — cache headers para assets
+- `.dev.vars` — vars de desenvolvimento
+- `package.json` — scripts build/deploy, dependências limpas
