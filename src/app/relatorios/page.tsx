@@ -21,8 +21,8 @@ export default async function RelatoriosPage() {
         const d = new Date(r.date);
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       })
-    )
-  );
+    ) as Set<string>
+  ).sort() as string[];
 
   return (
     <div className="p-8 space-y-8 bg-black min-h-screen text-white">
