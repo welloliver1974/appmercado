@@ -1,7 +1,7 @@
 "use client";
 
 import { signIn as webAuthnSignIn } from "next-auth/webauthn";
-import { signIn } from "next-auth/react";
+import { getCsrfToken } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { Fingerprint, ShoppingCart, Loader2, KeyRound } from "lucide-react";
 
@@ -14,25 +14,19 @@ export default function LoginPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const err = params.get("error");
-    if (err) setError("Falha na autenticação. Tente novamente.");
+    if (params.get("error")) setError("Falha na autenticação. Tente novamente.");
   }, []);
 
   const handlePasskeyLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return setError("Por favor, digite seu e-mail.");
+    if (!email) return setError("Digite seu e-mail.");
     setError("");
     setLoading(true);
     try {
-      const result = await webAuthnSignIn("passkey", { email, redirect: false, callbackUrl: "/" });
-      if (result?.error) {
-        setError("Erro na biometria. Tente usar senha.");
-        return;
-      }
-      window.location.href = result?.url || "/";
-    } catch (error) {
-      console.error(error);
-      setError("Erro ao autenticar com biometria. Tente usar senha.");
+      await webAuthnSignIn("passkey", { email, callbackUrl: "/" });
+    } catch (err) {
+      console.error(err);
+      setError("Erro na biometria. Use a opção Senha.");
     } finally {
       setLoading(false);
     }
@@ -43,15 +37,33 @@ export default function LoginPage() {
     if (!email || !password) return setError("Preencha email e senha.");
     setError("");
     setLoading(true);
+
     try {
-      const result = await signIn("credentials", { email, password, redirect: false, callbackUrl: "/" });
-      if (result?.error) {
-        setError("Email ou senha inválidos.");
+      const csrfToken = await getCsrfToken();
+      const res = await fetch("/api/auth/callback/credentials", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-Auth-Return-Redirect": "1",
+        },
+        body: new URLSearchParams({
+          email,
+          password,
+          csrfToken: csrfToken ?? "",
+          callbackUrl: "/",
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.url) {
+        window.location.href = data.url;
         return;
       }
-      window.location.href = result?.url || "/";
-    } catch (error) {
-      console.error(error);
+
+      setError("Email ou senha inválidos.");
+    } catch (err) {
+      console.error(err);
       setError("Erro ao conectar. Verifique sua conexão.");
     } finally {
       setLoading(false);
@@ -70,25 +82,13 @@ export default function LoginPage() {
         </div>
 
         <div className="flex rounded-xl bg-black p-1 border border-zinc-800">
-          <button
-            type="button"
-            onClick={() => setMode("senha")}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold rounded-lg transition-all ${
-              mode === "senha" ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20" : "text-zinc-400 hover:text-zinc-300"
-            }`}
-          >
-            <KeyRound className="h-4 w-4" />
-            Senha
+          <button type="button" onClick={() => setMode("senha")}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold rounded-lg transition-all ${mode === "senha" ? "bg-blue-600 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-300"}`}>
+            <KeyRound className="h-4 w-4" /> Senha
           </button>
-          <button
-            type="button"
-            onClick={() => setMode("biometria")}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold rounded-lg transition-all ${
-              mode === "biometria" ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20" : "text-zinc-400 hover:text-zinc-300"
-            }`}
-          >
-            <Fingerprint className="h-4 w-4" />
-            Digital
+          <button type="button" onClick={() => setMode("biometria")}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold rounded-lg transition-all ${mode === "biometria" ? "bg-blue-600 text-white shadow-lg" : "text-zinc-400 hover:text-zinc-300"}`}>
+            <Fingerprint className="h-4 w-4" /> Digital
           </button>
         </div>
 
@@ -98,77 +98,34 @@ export default function LoginPage() {
           </div>
         )}
 
-        <form
-          className="mt-2 space-y-6"
-          onSubmit={mode === "biometria" ? handlePasskeyLogin : handlePasswordLogin}
-        >
-          <div className="space-y-4 rounded-md">
-            <div>
-              <input
-                id="email-address"
-                name="email"
-                type="email"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="relative block w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white placeholder-zinc-600 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm transition-all"
-                placeholder="seu@email.com"
-              />
-            </div>
+        <form className="mt-2 space-y-6" onSubmit={mode === "biometria" ? handlePasskeyLogin : handlePasswordLogin}>
+          <div className="space-y-4">
+            <input id="email" name="email" type="email" autoComplete="email" required
+              value={email} onChange={(e) => setEmail(e.target.value)}
+              className="relative block w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white placeholder-zinc-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+              placeholder="seu@email.com" />
 
             {mode === "senha" && (
-              <div>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="relative block w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white placeholder-zinc-600 focus:z-10 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm transition-all"
-                  placeholder="sua senha"
-                />
-              </div>
+              <input id="password" name="password" type="password" autoComplete="current-password" required
+                value={password} onChange={(e) => setPassword(e.target.value)}
+                className="relative block w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white placeholder-zinc-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                placeholder="sua senha" />
             )}
           </div>
 
-          <div>
-            <button
-              type="submit"
-              disabled={loading}
-              className="group relative flex w-full justify-center rounded-xl bg-blue-600 px-4 py-4 text-sm font-black text-white hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-black disabled:bg-blue-800 transition-all shadow-lg shadow-blue-900/20"
-            >
-              {loading ? (
-                <Loader2 className="h-5 w-5 animate-spin" />
-              ) : mode === "biometria" ? (
-                <>
-                  <Fingerprint className="mr-2 h-5 w-5" />
-                  ENTRAR COM DIGITAL
-                </>
-              ) : (
-                <>
-                  <KeyRound className="mr-2 h-5 w-5" />
-                  ENTRAR
-                </>
-              )}
-            </button>
-          </div>
+          <button type="submit" disabled={loading}
+            className="group relative flex w-full justify-center rounded-xl bg-blue-600 px-4 py-4 text-sm font-black text-white hover:bg-blue-500 disabled:bg-blue-800 transition-all shadow-lg">
+            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : mode === "biometria" ? (
+              <><Fingerprint className="mr-2 h-5 w-5" /> ENTRAR COM DIGITAL</>
+            ) : (
+              <><KeyRound className="mr-2 h-5 w-5" /> ENTRAR</>
+            )}
+          </button>
         </form>
 
-        <div className="text-center">
-          {mode === "senha" && (
-            <p className="text-xs text-zinc-600 leading-relaxed px-4">
-              Use a senha definida no sistema.
-            </p>
-          )}
-          {mode === "biometria" && (
-            <p className="text-xs text-zinc-600 leading-relaxed px-4">
-              Use Digital ou FaceID do seu celular.
-            </p>
-          )}
-        </div>
+        <p className="text-xs text-zinc-600 text-center px-4">
+          {mode === "senha" ? "Use a senha definida no sistema." : "Use Digital ou FaceID do seu celular."}
+        </p>
       </div>
     </div>
   );
