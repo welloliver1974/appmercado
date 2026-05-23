@@ -7,7 +7,9 @@ export async function POST(request: Request) {
   const userId = session?.user?.id;
   if (!userId) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
 
-  const { name } = await request.json();
+  const text = await request.text();
+  const params = new URLSearchParams(text);
+  const name = params.get("name");
   if (!name || !name.trim()) return NextResponse.json({ error: "Nome inválido" }, { status: 400 });
 
   await prisma.user.update({ where: { id: userId }, data: { name: name.trim() } });

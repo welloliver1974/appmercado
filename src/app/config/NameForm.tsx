@@ -1,19 +1,22 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { Edit3, Loader2 } from "lucide-react";
-import { updateName } from "./actions";
 
 export function NameForm({ currentName }: { currentName: string }) {
   const [editing, setEditing] = useState(false);
   const [pending, setPending] = useState(false);
-  const formRef = useRef<HTMLFormElement>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setPending(true);
-    const formData = new FormData(e.currentTarget as HTMLFormElement);
-    await updateName(formData);
+    const form = e.currentTarget as HTMLFormElement;
+    const data = new URLSearchParams(new FormData(form) as any).toString();
+    await fetch("/api/config/name", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: data,
+    });
     window.location.reload();
   }
 
@@ -33,7 +36,7 @@ export function NameForm({ currentName }: { currentName: string }) {
   }
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="flex items-center gap-2">
+    <form onSubmit={handleSubmit} className="flex items-center gap-2">
       <input
         name="name"
         defaultValue={currentName}
@@ -46,7 +49,7 @@ export function NameForm({ currentName }: { currentName: string }) {
         disabled={pending}
         className="text-xs text-blue-400 font-medium hover:text-blue-300 disabled:opacity-50 flex items-center gap-1"
       >
-        {pending ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
+        {pending && <Loader2 className="h-3 w-3 animate-spin" />}
         {pending ? "Salvando..." : "Salvar"}
       </button>
       <button type="button" onClick={() => setEditing(false)} className="text-xs text-zinc-500 hover:text-zinc-400">
