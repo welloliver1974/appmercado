@@ -259,4 +259,13 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 - Card "Preços Anormais" exibe alertas no dashboard.
 - Fallback silencioso se IA não configurada.
 
+### Busca de Preços Online (Google Custom Search)
+- Novo botão "Preço online" em cada produto na página `/analise`.
+- `priceSearch.ts` consulta Google Custom Search para encontrar preços na web.
+- API route `/api/pesquisar-preco` faz a busca no servidor.
+- Componente `PriceSearchButton` exibe resultados (loja + preço) com link externo.
+- Fallback silencioso se `GOOGLE_API_KEY` / `GOOGLE_CX` não configurados.
+- Para configurar: adicionar `GOOGLE_API_KEY` e `GOOGLE_CX` no `.env`.
+  - Obter em: https://developers.google.com/custom-search/v1/introduction
+
 *Log atualizado em 23/05/2026*

@@ -7,6 +7,7 @@ import {
   BarChart3
 } from "lucide-react";
 import { auth } from "@/auth";
+import { PriceSearchButton } from "@/components/PriceSearchButton";
 
 interface ItemWithReceipt {
   unitPrice: number;
@@ -153,6 +154,8 @@ export default async function AnalisePage() {
                   {(((product.maxPrice - product.minPrice) / product.minPrice) * 100).toFixed(0)}% de diferença
                 </span>
               </div>
+
+              <PriceSearchButton productName={product.name} />
             </div>
           ))
         )}
