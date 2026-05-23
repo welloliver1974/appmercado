@@ -1,9 +1,9 @@
-# FIXLOG - AppMercado 🛒
+# FIXLOG - Controle de Despesas
 
-Este log detalha todas as etapas de desenvolvimento, funcionalidades implementadas e a estrutura do projeto **AppMercado**.
+Este log detalha todas as etapas de desenvolvimento, funcionalidades implementadas e a estrutura do projeto **Controle de Despesas**.
 
 ## 🚀 Visão Geral
-O AppMercado é um web app completo para gerenciamento de compras de supermercado, focado em automação via IA, controle de estoque e análise financeira.
+O Controle de Despesas é um web app completo para gerenciamento de gastos, compras e despesas, focado em automação via IA, controle de estoque e análise financeira.
 
 ---
 

@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "AppMercado - Seu Gerenciador Inteligente",
-  description: "Gerencie suas compras, estoque e preços com IA",
+  title: "Controle de Despesas",
+  description: "Controle de Despesas - Gerencie seus gastos de forma inteligente",
 };
 
 export default function RootLayout({

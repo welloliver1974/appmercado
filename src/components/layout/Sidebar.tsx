@@ -23,7 +23,7 @@ export function Sidebar() {
       <div className="p-6 border-b border-zinc-800 bg-black">
         <h1 className="text-xl font-bold flex items-center gap-2 text-blue-500">
           <ShoppingCart className="h-6 w-6" />
-          AppMercado
+          Controle de Despesas
         </h1>
       </div>
       

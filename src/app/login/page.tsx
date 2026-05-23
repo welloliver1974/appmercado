@@ -9,23 +9,30 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"biometria" | "senha">("biometria");
-  const [hasWebAuthn, setHasWebAuthn] = useState(false);
+  const [mode, setMode] = useState<"biometria" | "senha">("senha");
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    setHasWebAuthn(typeof window !== "undefined" && !!window.PublicKeyCredential);
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get("error");
+    if (err) setError("Falha na autenticação. Tente novamente.");
   }, []);
 
   const handlePasskeyLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) return alert("Por favor, digite seu e-mail.");
-
+    if (!email) return setError("Por favor, digite seu e-mail.");
+    setError("");
     setLoading(true);
     try {
-      await webAuthnSignIn("passkey", { email, callbackUrl: "/" });
+      const result = await webAuthnSignIn("passkey", { email, redirect: false, callbackUrl: "/" });
+      if (result?.error) {
+        setError("Erro na biometria. Tente usar senha.");
+        return;
+      }
+      window.location.href = result?.url || "/";
     } catch (error) {
       console.error(error);
-      alert("Erro ao autenticar com biometria. Tente usar senha.");
+      setError("Erro ao autenticar com biometria. Tente usar senha.");
     } finally {
       setLoading(false);
     }
@@ -33,14 +40,19 @@ export default function LoginPage() {
 
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) return alert("Preencha email e senha.");
-
+    if (!email || !password) return setError("Preencha email e senha.");
+    setError("");
     setLoading(true);
     try {
-      await signIn("credentials", { email, password, callbackUrl: "/" });
+      const result = await signIn("credentials", { email, password, redirect: false, callbackUrl: "/" });
+      if (result?.error) {
+        setError("Email ou senha inválidos.");
+        return;
+      }
+      window.location.href = result?.url || "/";
     } catch (error) {
       console.error(error);
-      alert("Email ou senha inválidos.");
+      setError("Erro ao conectar. Verifique sua conexão.");
     } finally {
       setLoading(false);
     }
@@ -53,21 +65,11 @@ export default function LoginPage() {
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-600 shadow-lg shadow-blue-900/20">
             <ShoppingCart className="h-10 w-10 text-white" />
           </div>
-          <h2 className="mt-6 text-3xl font-black tracking-tight text-white">AppMercado</h2>
-          <p className="mt-2 text-sm text-zinc-400 font-medium">Seu gerenciador inteligente de compras</p>
+          <h2 className="mt-6 text-3xl font-black tracking-tight text-white">Controle de Despesas</h2>
+          <p className="mt-2 text-sm text-zinc-400 font-medium">Gerencie seus gastos de forma inteligente</p>
         </div>
 
         <div className="flex rounded-xl bg-black p-1 border border-zinc-800">
-          <button
-            type="button"
-            onClick={() => setMode("biometria")}
-            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold rounded-lg transition-all ${
-              mode === "biometria" ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20" : "text-zinc-400 hover:text-zinc-300"
-            }`}
-          >
-            <Fingerprint className="h-4 w-4" />
-            Digital
-          </button>
           <button
             type="button"
             onClick={() => setMode("senha")}
@@ -78,14 +80,30 @@ export default function LoginPage() {
             <KeyRound className="h-4 w-4" />
             Senha
           </button>
+          <button
+            type="button"
+            onClick={() => setMode("biometria")}
+            className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold rounded-lg transition-all ${
+              mode === "biometria" ? "bg-blue-600 text-white shadow-lg shadow-blue-900/20" : "text-zinc-400 hover:text-zinc-300"
+            }`}
+          >
+            <Fingerprint className="h-4 w-4" />
+            Digital
+          </button>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={mode === "biometria" ? handlePasskeyLogin : handlePasswordLogin}>
+        {error && (
+          <div className="rounded-xl bg-red-900/20 border border-red-800 px-4 py-3 text-sm text-red-400 font-medium text-center">
+            {error}
+          </div>
+        )}
+
+        <form
+          className="mt-2 space-y-6"
+          onSubmit={mode === "biometria" ? handlePasskeyLogin : handlePasswordLogin}
+        >
           <div className="space-y-4 rounded-md">
             <div>
-              <label htmlFor="email-address" className="block text-xs font-bold uppercase text-zinc-500 mb-2 ml-1">
-                E-mail
-              </label>
               <input
                 id="email-address"
                 name="email"
@@ -101,9 +119,6 @@ export default function LoginPage() {
 
             {mode === "senha" && (
               <div>
-                <label htmlFor="password" className="block text-xs font-bold uppercase text-zinc-500 mb-2 ml-1">
-                  Senha
-                </label>
                 <input
                   id="password"
                   name="password"
@@ -130,7 +145,7 @@ export default function LoginPage() {
               ) : mode === "biometria" ? (
                 <>
                   <Fingerprint className="mr-2 h-5 w-5" />
-                  ENTRAR COM BIOMETRIA
+                  ENTRAR COM DIGITAL
                 </>
               ) : (
                 <>
@@ -143,16 +158,14 @@ export default function LoginPage() {
         </form>
 
         <div className="text-center">
-          {mode === "biometria" && (
-            <p className="text-xs text-zinc-600 leading-relaxed px-4">
-              {hasWebAuthn
-                ? "Use Digital ou FaceID do seu celular. No notebook, use a opção Senha."
-                : "Seu navegador não suporta biometria. Use a opção Senha."}
-            </p>
-          )}
           {mode === "senha" && (
             <p className="text-xs text-zinc-600 leading-relaxed px-4">
-              Use a senha definida no sistema para acessar pelo notebook.
+              Use a senha definida no sistema.
+            </p>
+          )}
+          {mode === "biometria" && (
+            <p className="text-xs text-zinc-600 leading-relaxed px-4">
+              Use Digital ou FaceID do seu celular.
             </p>
           )}
         </div>
