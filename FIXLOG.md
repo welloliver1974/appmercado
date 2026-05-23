@@ -276,4 +276,31 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 - Redimensiona pra max 1024px de largura, qualidade JPEG 0.7.
 - Reduz drasticamente tokens gastos em chamadas de visão (foto de 8MB → ~100-200KB).
 
+---
+
+## 🔧 Grande Refatoração de Segurança e Estabilidade (23/05/2026 — noite)
+
+### Segurança
+- `updateStockAction` e `deleteProductAction` agora verificam `auth()` e scopo por `userId`.
+- `proxy.ts` renomeado para `middleware.ts` (reativa proteção global de rotas — estava morto).
+- `POST /api/pesquisar-preco` agora exige autenticação.
+- Stock actions mudaram de parâmetros diretos para `FormData` (escondem IDs via `<input type="hidden">`).
+
+### Estabilidade
+- `analise/page.tsx`: `.filter().map()` reorganizado — filtra produtos sem itens ANTES de calcular `Math.min()`, evitando `NaN`/`Infinity`.
+- `estoque/page.tsx` + `lista-compras/page.tsx`: `product.category?.name ?? "Sem categoria"` — não quebra mais se a relação estiver nula.
+- `compartilhado/[token]/page.tsx`: `JSON.parse()` dentro de try/catch — se o JSON estiver corrompido, chama `notFound()` em vez de crashar.
+- `analise/page.tsx`: `bestMarket ?? "---"` — não renderiza "undefined" na tela.
+
+### UX
+- Todas as páginas que retornavam `return null` (Dashboard, Notas, Estoque, Lista, Análise) agora fazem `redirect("/login")`.
+- `FinalizarComprasButton` e `AddMarketButton`: `router.refresh()` em vez de `window.location.reload()` (sem flash, sem perder estado React).
+- Login: email mantido via `useState` — não some mais ao trocar entre abas Digital/Senha.
+- Server actions do estoque movidas de closures inline para forms com `<input type="hidden">`.
+
+### Limpeza
+- Dependências removidas do `package.json`: `@google/generative-ai`, `better-sqlite3`, `clsx`, `date-fns`, `tailwind-merge`.
+- `prisma` movido para `devDependencies`.
+- Ícones não usados removidos: `Store` (notas), `Package` (lista-compras), `ArrowUp`/`Store` (analise — só os que não eram usados foram removidos).
+
 *Log atualizado em 23/05/2026*

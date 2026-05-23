@@ -10,9 +10,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## Premissas
 - App pessoal, senha compartilhada via `AUTH_PASSWORD` no .env
 - Login: server action manual seta cookies `user-id` e `user-email` (7 dias)
-- Proxy (`src/proxy.ts`) verifica cookie `user-id` diretamente (NÃO usa NextAuth session)
+- Middleware (`src/middleware.ts`) verifica cookie `user-id` diretamente (NÃO usa NextAuth session)
 - `auth()` em `src/auth.ts` lê cookie e busca user no banco (função customizada, não NextAuth)
-- Todas API routes leem cookie manualmente do header (`request.headers.get("cookie")`)
+- Todas API routes e server actions verificam `auth()` com escopo por `userId`
 - Prisma v7 com `@prisma/adapter-libsql` + `@libsql/client` — URL do banco usa `path.resolve` + prefixo `file:`
 - Usar `npx prisma db push` para sincronizar schema (migration regenerada em 23/05)
 - Next.js 16 com Turbopack (`--turbo`)

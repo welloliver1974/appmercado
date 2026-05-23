@@ -4,10 +4,10 @@ import {
   CheckSquare, 
   Plus, 
   Printer,
-  Package,
   AlertCircle
 } from "lucide-react";
 import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import { ShareListButton } from "@/components/ShareListButton";
 import { FinalizarComprasButton } from "@/components/FinalizarComprasButton";
 
@@ -15,7 +15,7 @@ export default async function ListaComprasPage() {
   const session = await auth();
   const userId = session?.user?.id;
 
-  if (!userId) return null;
+  if (!userId) redirect("/login");
 
   const lowStockProducts = await prisma.product.findMany({
     where: {
@@ -70,7 +70,7 @@ export default async function ListaComprasPage() {
                   </div>
                   <div>
                     <p className="font-bold text-white">{product.name}</p>
-                    <p className="text-xs text-zinc-500 font-medium uppercase tracking-widest">{product.category.name}</p>
+                    <p className="text-xs text-zinc-500 font-medium uppercase tracking-widest">{product.category?.name ?? "Sem categoria"}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-6">

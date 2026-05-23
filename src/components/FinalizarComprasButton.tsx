@@ -1,17 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { CheckSquare, Loader2 } from "lucide-react";
 import { finalizarComprasAction } from "@/app/actions/stock";
 
 export function FinalizarComprasButton() {
   const [pending, setPending] = useState(false);
+  const router = useRouter();
 
   async function handleClick() {
     if (!confirm("Marcar todos os itens como comprados e reabastecer o estoque?")) return;
     setPending(true);
     await finalizarComprasAction();
-    window.location.reload();
+    router.refresh();
   }
 
   return (

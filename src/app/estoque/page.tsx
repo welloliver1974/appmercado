@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { updateStockAction, deleteProductAction } from "@/app/actions/stock";
 import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import { SearchInput } from "@/components/SearchInput";
 
 export default async function EstoquePage(props: { searchParams?: Promise<{ q?: string }> }) {
@@ -16,7 +17,7 @@ export default async function EstoquePage(props: { searchParams?: Promise<{ q?: 
   const session = await auth();
   const userId = session?.user?.id;
 
-  if (!userId) return null;
+  if (!userId) redirect("/login");
 
   const products = await prisma.product.findMany({
     where: { userId },
@@ -91,21 +92,6 @@ function ProductRow({ product }: { product: any }) {
   const lastItem = product.items[0];
   const isLowStock = product.stock <= (product.minStock || 1);
 
-  async function handleDecrement() {
-    "use server";
-    await updateStockAction(product.id, -1);
-  }
-
-  async function handleIncrement() {
-    "use server";
-    await updateStockAction(product.id, 1);
-  }
-
-  async function handleDelete() {
-    "use server";
-    await deleteProductAction(product.id);
-  }
-
   return (
     <tr className="group hover:bg-zinc-800/30 transition-colors">
       <td className="p-4">
@@ -116,7 +102,7 @@ function ProductRow({ product }: { product: any }) {
       </td>
       <td className="p-4">
         <span className="px-2 py-1 rounded-md bg-zinc-800 text-zinc-400 text-xs font-medium border border-zinc-700">
-          {product.category.name}
+          {product.category?.name ?? "Sem categoria"}
         </span>
       </td>
       <td className="p-4">
@@ -141,18 +127,23 @@ function ProductRow({ product }: { product: any }) {
       </td>
       <td className="p-4">
         <div className="flex items-center justify-end gap-2">
-          <form action={handleDecrement}>
+          <form action={updateStockAction}>
+            <input type="hidden" name="productId" value={product.id} />
+            <input type="hidden" name="quantity" value="-1" />
             <button className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-white transition-all">
               <Minus className="h-4 w-4" />
             </button>
           </form>
-          <form action={handleIncrement}>
+          <form action={updateStockAction}>
+            <input type="hidden" name="productId" value={product.id} />
+            <input type="hidden" name="quantity" value="1" />
             <button className="p-2 hover:bg-zinc-700 rounded-lg text-zinc-400 hover:text-white transition-all">
               <Plus className="h-4 w-4" />
             </button>
           </form>
           <div className="w-px h-4 bg-zinc-800 mx-1" />
-          <form action={handleDelete}>
+          <form action={deleteProductAction}>
+            <input type="hidden" name="productId" value={product.id} />
             <button className="p-2 hover:bg-red-500/20 rounded-lg text-zinc-500 hover:text-red-500 transition-all">
               <Trash2 className="h-4 w-4" />
             </button>

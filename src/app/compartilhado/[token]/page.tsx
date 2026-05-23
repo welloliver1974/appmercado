@@ -11,7 +11,12 @@ export default async function SharedListPage({ params }: { params: Promise<{ tok
     notFound();
   }
 
-  const items: { name: string; category: string; stock: number; unit: string }[] = JSON.parse(shared.items);
+  let items: { name: string; category: string; stock: number; unit: string }[] = [];
+  try {
+    items = JSON.parse(shared.items);
+  } catch {
+    notFound();
+  }
 
   return (
     <div className="min-h-screen bg-black text-white p-8">

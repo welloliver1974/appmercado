@@ -1,15 +1,15 @@
 "use client";
 
 import { signIn as webAuthnSignIn } from "next-auth/webauthn";
-import { useState, useEffect, useActionState, useRef } from "react";
+import { useState, useEffect, useActionState } from "react";
 import { authenticate } from "./actions/auth";
 import { Fingerprint, ShoppingCart, Loader2, KeyRound } from "lucide-react";
 
 export default function LoginPage() {
   const [mode, setMode] = useState<"senha" | "digital">("senha");
   const [error, setError] = useState("");
+  const [email, setEmail] = useState("");
   const [actionState, formAction, pending] = useActionState(authenticate, { error: "" });
-  const emailRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (actionState?.error) setError(actionState.error);
@@ -21,7 +21,6 @@ export default function LoginPage() {
   }, []);
 
   const handlePasskeyLogin = async () => {
-    const email = emailRef.current?.value;
     if (!email) return setError("Digite seu e-mail.");
     setError("");
     try {
@@ -63,7 +62,7 @@ export default function LoginPage() {
         {mode === "senha" ? (
           <form action={formAction} className="mt-2 space-y-6">
             <div className="space-y-4">
-              <input ref={emailRef} name="email" type="email" autoComplete="email" required
+              <input name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                 className="relative block w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white placeholder-zinc-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
                 placeholder="seu@email.com" />
               <input name="password" type="password" autoComplete="current-password" required
@@ -79,7 +78,7 @@ export default function LoginPage() {
         ) : (
           <div className="mt-2 space-y-6">
             <div className="space-y-4">
-              <input ref={emailRef} name="email" type="email" autoComplete="email" required
+              <input name="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)}
                 className="relative block w-full rounded-xl border border-zinc-800 bg-black px-4 py-3 text-white placeholder-zinc-600 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
                 placeholder="seu@email.com" />
             </div>

@@ -2,12 +2,12 @@ import { prisma } from "@/lib/prisma";
 import { 
   History, 
   Calendar, 
-  Store, 
   ChevronRight,
   FileText
 } from "lucide-react";
 import Link from "next/link";
 import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import { SearchInput } from "@/components/SearchInput";
 
 export default async function NotasPage(props: { searchParams?: Promise<{ q?: string; mercado?: string }> }) {
@@ -17,7 +17,7 @@ export default async function NotasPage(props: { searchParams?: Promise<{ q?: st
   const session = await auth();
   const userId = session?.user?.id;
 
-  if (!userId) return null;
+  if (!userId) redirect("/login");
 
   const receipts = await prisma.receipt.findMany({
     where: { userId },

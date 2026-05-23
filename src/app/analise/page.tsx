@@ -1,12 +1,13 @@
 import { prisma } from "@/lib/prisma";
 import { 
   TrendingUp, 
-  ArrowUp, 
-  Store,
   Tag,
-  BarChart3
+  BarChart3,
+  Store,
+  ArrowUp
 } from "lucide-react";
 import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 import { PriceSearchButton } from "@/components/PriceSearchButton";
 
 interface ItemWithReceipt {
@@ -26,7 +27,7 @@ export default async function AnalisePage() {
   const session = await auth();
   const userId = session?.user?.id;
 
-  if (!userId) return null;
+  if (!userId) redirect("/login");
 
   const products = await prisma.product.findMany({
     where: { userId },
@@ -43,31 +44,33 @@ export default async function AnalisePage() {
     }
   });
 
-  const productAnalysis = (products as unknown as ProductWithItems[]).map((product) => {
-    const prices = product.items.map((item) => item.unitPrice);
-    const minPrice = Math.min(...prices);
-    const maxPrice = Math.max(...prices);
-    const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
+  const productAnalysis = (products as unknown as ProductWithItems[])
+    .filter((p) => p.items.length > 0)
+    .map((product) => {
+      const prices = product.items.map((item) => item.unitPrice);
+      const minPrice = Math.min(...prices);
+      const maxPrice = Math.max(...prices);
+      const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
 
-    const bestMarket = product.items.find((item) => item.unitPrice === minPrice)?.receipt.market.name;
+      const bestMarket = product.items.find((item) => item.unitPrice === minPrice)?.receipt.market.name;
 
-    const pricesByMarket: Record<string, { price: number; count: number }> = {};
-    for (const item of product.items) {
-      const name = item.receipt.market.name;
-      if (!pricesByMarket[name]) pricesByMarket[name] = { price: Infinity, count: 0 };
-      if (item.unitPrice < pricesByMarket[name].price) pricesByMarket[name].price = item.unitPrice;
-      pricesByMarket[name].count++;
-    }
+      const pricesByMarket: Record<string, { price: number; count: number }> = {};
+      for (const item of product.items) {
+        const name = item.receipt.market.name;
+        if (!pricesByMarket[name]) pricesByMarket[name] = { price: Infinity, count: 0 };
+        if (item.unitPrice < pricesByMarket[name].price) pricesByMarket[name].price = item.unitPrice;
+        pricesByMarket[name].count++;
+      }
 
-    return {
-      ...product,
-      minPrice,
-      maxPrice,
-      avgPrice,
-      bestMarket,
-      pricesByMarket,
-    };
-  }).filter((p) => p.items.length > 0);
+      return {
+        ...product,
+        minPrice,
+        maxPrice,
+        avgPrice,
+        bestMarket,
+        pricesByMarket,
+      };
+    });
 
   return (
     <div className="p-8 space-y-8 bg-black min-h-screen text-white">
@@ -116,7 +119,7 @@ export default async function AnalisePage() {
                     <Store className="h-4 w-4" />
                     Melhor mercado:
                   </span>
-                  <span className="font-bold text-white">{product.bestMarket}</span>
+                  <span className="font-bold text-white">{product.bestMarket ?? "---"}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-zinc-500 flex items-center gap-2">

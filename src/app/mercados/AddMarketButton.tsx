@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Loader2 } from "lucide-react";
 
 export function AddMarketButton() {
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState(false);
+  const router = useRouter();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -21,7 +23,7 @@ export function AddMarketButton() {
 
     setPending(false);
     setOpen(false);
-    window.location.reload();
+    router.refresh();
   }
 
   return (

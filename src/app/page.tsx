@@ -13,6 +13,7 @@ import {
   AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { CriticalStockAlert } from "@/components/notifications/CriticalStockAlert";
@@ -22,7 +23,7 @@ export default async function Home() {
   const session = await auth();
   const userId = session?.user?.id;
 
-  if (!userId) return null;
+  if (!userId) redirect("/login");
 
   const recentReceipts = await prisma.receipt.findMany({
     where: { userId },
