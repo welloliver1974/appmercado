@@ -62,8 +62,11 @@ O Controle de Despesas é um web app completo para gerenciamento de gastos, comp
 - `src/app/notas/page.tsx`: Histórico de recibos.
 - `src/app/analise/page.tsx`: Comparador de preços.
 - `src/app/lista-compras/page.tsx`: Lista automática.
+- `src/app/config/page.tsx`: Configurações (editar nome).
+- `src/app/relatorios/page.tsx`: Exportar relatório CSV mensal.
+- `src/app/compartilhado/[token]/page.tsx`: Página pública de lista compartilhada.
 - `src/lib/ai.ts`: Configuração do motor de IA (OpenRouter/Groq).
-- `src/app/actions/`: Lógica de servidor para DB (Salvar notas, atualizar estoque).
+- `src/app/actions/`: Lógica de servidor para DB (Salvar notas, atualizar estoque, compartilhar).
 - `prisma/schema.prisma`: Modelagem do banco de dados.
 
 ---
@@ -113,11 +116,12 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 
 ## 🔐 Autenticação - Como Funciona
 - **Provider 1**: Passkey (WebAuthn) via `next-auth/providers/passkey` — para celular com biometria
-- **Provider 2**: Credentials (senha) via `next-auth/providers/credentials` — fallback para notebook
-- **Biometria**: O Auth.js gerencia o cerimonial completo — registro e login via fingerprint/FaceID
-- **Senha**: Senha compartilhada definida em `AUTH_PASSWORD` no `.env` (para uso pessoal)
-- **Sessão**: JWT (obrigatório para compatibilidade com Prisma sem Edge)
-- **Middleware/Proxy**: Apenas verifica se há sessão JWT válida, sem precisar do adapter de banco
+- **Provider 2**: Credentials (senha) manual via server action — fallback para notebook
+- **Biometria**: Auth.js gerencia o cerimonial completo — registro e login via fingerprint/FaceID
+- **Senha**: Senha compartilhada em `AUTH_PASSWORD` no `.env`. Server action valida e cria usuário no banco.
+- **Sessão**: Cookies manuais (`user-id`, `user-email`) definidos pelo server action, com 7 dias de validade.
+- **Middleware/Proxy**: Verifica cookie `user-id` diretamente, sem depender do Auth.js.
+- **Auth()**: Função customizada em `auth.ts` que lê o cookie e busca o usuário no banco.
 - **Login**: Tela em `/login` com abas para escolher entre Digital (biometria) e Senha (credenciais)
 
 ---
@@ -135,8 +139,15 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 - Link direto pra página de estoque.
 
 ### 9. Análise de Preços por Mercado (Multi-mercado)
+- Página `/analise` agora exibe tabela de preços por mercado para cada produto.
+- Destaque visual para o mercado com menor preço (tag "MELHOR").
+- Ordenação automática do mais barato ao mais caro.
 
 ### 10. Compartilhar Lista de Compras
+- Botão "Compartilhar" na página `/lista-compras` gera link único com validade de 7 dias.
+- Link copiado automaticamente para a área de transferência.
+- Página pública `/compartilhado/[token]` exibe a lista sem login.
+- Modelo `SharedList` no banco com token único e expiração.
 
 ### 11. Previsão de Gastos (Estatística)
 - Dashboard exibe previsão de gastos para o próximo mês baseada na média dos últimos 3 meses.
@@ -148,10 +159,6 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 - Service Worker (`sw.js`) com cache de assets e fallback offline.
 - Metatags para suporte a iOS (apple-mobile-web-app) e Android.
 - Script de registro automático do service worker no layout.
-- Página `/analise` agora exibe tabela de preços por mercado para cada produto.
-- Destaque visual para o mercado com menor preço (tag "MELHOR").
-- Ordenação automática do mais barato ao mais caro.
-- Aproveita dados existentes: cada `ReceiptItem` já está vinculado a um `Receipt` com `Market`.
 
 ---
 
