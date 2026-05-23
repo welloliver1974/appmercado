@@ -1,16 +1,24 @@
 "use client";
 
-import { useActionState, useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import { updateName } from "./actions";
-import { Edit3, Check, Loader2, X } from "lucide-react";
+import { Edit3, Check, Loader2 } from "lucide-react";
 
 export function NameForm({ currentName }: { currentName: string }) {
   const [editing, setEditing] = useState(false);
-  const [state, action, pending] = useActionState(updateName, {});
+  const [pending, setPending] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
-  useEffect(() => {
-    if (state?.success) setEditing(false);
-  }, [state]);
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setPending(true);
+    const form = new FormData(e.target as HTMLFormElement);
+    const result = await updateName({}, form);
+    if (result?.success) {
+      setEditing(false);
+    }
+    setPending(false);
+  }
 
   if (!editing) {
     return (
@@ -25,7 +33,7 @@ export function NameForm({ currentName }: { currentName: string }) {
   }
 
   return (
-    <form action={action} className="flex items-center gap-2">
+    <form ref={formRef} onSubmit={handleSubmit} className="flex items-center gap-2">
       <input
         name="name"
         defaultValue={currentName}
@@ -43,7 +51,7 @@ export function NameForm({ currentName }: { currentName: string }) {
       <button
         type="button"
         onClick={() => setEditing(false)}
-        className="p-2 text-zinc-500 hover:text-zinc-400 rounded-lg hover:bg-zinc-800 transition-colors"
+        className="text-sm text-zinc-500 hover:text-zinc-400"
       >
         Cancelar
       </button>
