@@ -26,5 +26,8 @@
       "database_name": "appmercado-db",
       "database_id": "531c28d7-acff-4e8d-a8d0-4d42a6e98ba6"
     }
-  ]
+  ],
+  "vars": {
+    "NEXT_PUBLIC_AI_PROVIDER": "openrouter"
+  }
 }
