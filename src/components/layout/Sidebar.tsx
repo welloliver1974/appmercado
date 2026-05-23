@@ -9,7 +9,8 @@ import {
   Store,
   History,
   LogOut,
-  ListTodo
+  ListTodo,
+  FileText
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -33,6 +34,7 @@ export function Sidebar() {
         <NavItem href="/estoque" icon={<Package />} label="Estoque" active={pathname === "/estoque"} />
         <NavItem href="/lista-compras" icon={<ListTodo />} label="Lista de Compras" active={pathname === "/lista-compras"} />
         <NavItem href="/analise" icon={<TrendingUp />} label="Análise de Preços" active={pathname === "/analise"} />
+        <NavItem href="/relatorios" icon={<FileText />} label="Relatórios" active={pathname === "/relatorios"} />
         <NavItem href="/mercados" icon={<Store />} label="Mercados" active={pathname === "/mercados"} />
       </nav>
 

@@ -120,4 +120,20 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 - **Middleware/Proxy**: Apenas verifica se há sessão JWT válida, sem precisar do adapter de banco
 - **Login**: Tela em `/login` com abas para escolher entre Digital (biometria) e Senha (credenciais)
 
+---
+
+## ✨ Novas Funcionalidades (22/05/2026)
+
+### 7. Relatório Mensal CSV
+- Página `/relatorios` lista meses com compras registradas.
+- Botão "CSV" exporta relatório detalhado (mercado, data, produto, qtd, preços) + total gasto no mês.
+- Arquivo baixado com encoding UTF-8 (acentuação correta no Excel/Google Sheets).
+
+### 8. Notificações de Estoque Crítico
+- Componente `CriticalStockAlert` exibe banner no dashboard com itens em falta.
+- Envia notificação do navegador (API Notification) automaticamente se permitido.
+- Link direto pra página de estoque.
+
+---
+
 *Log gerado em 22/05/2026*

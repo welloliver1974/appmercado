@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { CriticalStockAlert } from "@/components/notifications/CriticalStockAlert";
 
 export default async function Home() {
   const session = await auth();
@@ -80,6 +81,10 @@ export default async function Home() {
           </Link>
         </div>
       </div>
+
+      <CriticalStockAlert
+        items={criticalProducts.map((p) => ({ id: p.id, name: p.name, stock: p.stock, unit: p.unit }))}
+      />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
