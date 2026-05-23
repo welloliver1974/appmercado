@@ -1,17 +1,27 @@
-import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/auth";
 
 export async function POST(request: Request) {
-  const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId) return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  const url = new URL(request.url);
+  const origin = url.origin;
+
+  const cookieHeader = request.headers.get("cookie") || "";
+  const userId = cookieHeader
+    .split(";")
+    .map((c) => c.trim())
+    .find((c) => c.startsWith("user-id="))
+    ?.split("=")[1];
+
+  if (!userId) {
+    return Response.redirect(`${origin}/config?erro=nao-autenticado`, 302);
+  }
 
   const text = await request.text();
   const params = new URLSearchParams(text);
   const name = params.get("name");
-  if (!name || !name.trim()) return NextResponse.json({ error: "Nome inválido" }, { status: 400 });
+  if (!name || !name.trim()) {
+    return Response.redirect(`${origin}/config?erro=nome-invalido`, 302);
+  }
 
   await prisma.user.update({ where: { id: userId }, data: { name: name.trim() } });
-  return NextResponse.json({ success: true });
+  return Response.redirect(`${origin}/config`, 302);
 }
