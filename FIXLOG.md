@@ -227,4 +227,9 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 - `prisma/migrations/` recriada do zero, 100% consistente com `schema.prisma`.
 - Novo setup: `npx prisma migrate dev` funciona direto (sem precisar de `db push`).
 
+### Botão Sair corrigido
+- `signOut` do `next-auth/react` só limpava cookie do NextAuth, não os cookies manuais.
+- Criado `logoutAction` server action que deleta `user-id` e `user-email` e redireciona para `/login`.
+- Sidebar agora usa form com server action em vez de `signOut()`.
+
 *Log atualizado em 23/05/2026*
