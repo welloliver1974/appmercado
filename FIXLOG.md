@@ -178,6 +178,11 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 - Saudação dinâmica (Bom dia / Boa tarde / Boa noite).
 - Nome extraído do email automaticamente no cadastro.
 
+### Config
+- `next.config.ts`: adicionado `allowedDevOrigins` para IP 100.112.32.71 (rede local).
+- API route `/api/update-name` criada em path separado para evitar interceptação do Next.js.
+- Lê cookie `user-id` manualmente do header HTTP.
+
 ---
 
 *Log gerado em 22/05/2026*
