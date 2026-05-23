@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Camera, ArrowLeft, Loader2, Save, Trash2, CheckCircle2 } from "lucide-react";
+import { Camera, ArrowLeft, Loader2, Save, Trash2, CheckCircle2, QrCode } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { processReceiptImage } from "@/lib/ai";
 import { saveReceiptAction } from "@/app/actions/receipts";
+import { QRScanner } from "@/components/QRScanner";
 
 export default function NovaNota() {
   const router = useRouter();
@@ -45,6 +46,21 @@ export default function NovaNota() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleQRScan = (qr: { accessKey: string; totalAmount?: number; rawUrl: string }) => {
+    const month = parseInt(qr.accessKey.substring(3, 5), 10) - 1;
+    const year = 2000 + parseInt(qr.accessKey.substring(1, 3), 10);
+    const date = new Date(year, Math.max(0, month), 1).toISOString().split("T")[0];
+    const cnpj = qr.accessKey.substring(6, 20);
+
+    setReceiptData({
+      marketName: `Mercado CNPJ ${cnpj}`,
+      date,
+      totalAmount: qr.totalAmount || 0,
+      items: [],
+      qrCode: qr.rawUrl,
+    });
   };
 
   const handleSave = async () => {
@@ -96,12 +112,13 @@ export default function NovaNota() {
           <div className="bg-zinc-900 p-6 rounded-2xl border border-zinc-800 space-y-4">
             <h3 className="font-bold text-lg">Capturar Nota</h3>
             
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <label className="flex flex-col items-center justify-center gap-2 p-6 rounded-xl border border-zinc-800 bg-zinc-950 hover:bg-zinc-800 cursor-pointer transition-all">
                 <Camera className="h-8 w-8 text-emerald-500" />
-                <span className="text-xs font-medium">Tirar Foto da Nota</span>
+                <span className="text-xs font-medium">Tirar Foto</span>
                 <input type="file" accept="image/*" capture="environment" className="hidden" onChange={handleFileChange} />
               </label>
+              <QRScanner onScan={handleQRScan} />
             </div>
 
             {image && (
