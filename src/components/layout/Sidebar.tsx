@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { logoutAction } from "@/app/actions/logout";
 
 export function Sidebar() {
   const pathname = usePathname();
@@ -40,13 +40,14 @@ export function Sidebar() {
 
       <div className="p-4 border-t border-zinc-800 bg-black space-y-2">
         <NavItem href="/config" icon={<Settings />} label="Configurações" active={pathname === "/config"} />
-        <button 
-          onClick={() => signOut({ callbackUrl: "/login" })}
-          className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
-        >
-          <LogOut className="h-4 w-4" />
-          Sair
-        </button>
+        <form action={logoutAction}>
+          <button type="submit"
+            className="w-full flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            Sair
+          </button>
+        </form>
       </div>
     </aside>
   );
