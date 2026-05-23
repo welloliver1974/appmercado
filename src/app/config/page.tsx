@@ -1,4 +1,4 @@
-import { Settings, Smartphone, Download, Globe, User, Edit3 } from "lucide-react";
+import { Settings, Smartphone, Download, Globe, User } from "lucide-react";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { NameForm } from "./NameForm";
@@ -30,10 +30,9 @@ export default async function ConfigPage() {
             </div>
             <div className="flex justify-between items-center">
               <span className="text-zinc-500">Nome</span>
-              <span className="text-white flex items-center gap-2">{session.user.name || "—"}</span>
+              <NameForm currentName={session.user.name || ""} />
             </div>
           </div>
-          <NameForm currentName={session.user.name || ""} />
         </div>
 
         <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-4">
