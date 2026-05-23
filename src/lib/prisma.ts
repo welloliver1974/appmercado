@@ -1,10 +1,12 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaLibSql } from "@prisma/adapter-libsql";
+import { resolve } from "path";
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient };
 
+const dbUrl = process.env.DATABASE_URL!.replace("file:", "");
 const adapter = new PrismaLibSql({
-  url: process.env.DATABASE_URL!.replace("file:", ""),
+  url: `file:${resolve(dbUrl)}`,
 });
 
 export const prisma =

@@ -78,6 +78,17 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 
 ## 🐛 Correções de Bugs (22/05/2026)
 
+### 4. Login com senha não funcionava (Credentials + Server Action)
+- **Causa 1**: `@libsql/client` não aceita caminho relativo (`./dev.db`). O `prisma.ts` removia o prefixo `file:` com `replace("file:", "")`, gerando URL inválida.
+- **Causa 2**: Mesmo após conectar ao banco, as tabelas não existiam — necessário rodar `npx prisma db push`.
+- **Causa 3**: O `proxy.ts` usava `NextAuth().auth` que verificava sessão JWT do Auth.js. Como o server action setava cookies manuais (`user-id`, `user-email`), o middleware não reconhecia e redirecionava de volta ao `/login`.
+- **Causa 4**: O `auth()` do Auth.js era chamado nas páginas (ex: `page.tsx`) e retornava `null` por não encontrar sessão JWT, fazendo o dashboard renderizar vazio.
+- **Solução**:
+  - `src/lib/prisma.ts`: usar `resolve()` + prefixo `file:` para gerar URL absoluta (`file:C:\...\dev.db`).
+  - Rodar `npx prisma db push` para criar as tabelas.
+  - `src/proxy.ts`: reescrito para verificar cookie `user-id` diretamente, sem depender do Auth.js.
+  - `src/auth.ts`: `auth()` substituído por função que lê o cookie `user-id` e busca o usuário no banco.
+
 ### 1. Login com biometria quebrado (Passkey + WebAuthn)
 - **Causa**: O `middleware.ts` criava instância separada do Auth.js **sem o PrismaAdapter**, mas o WebAuthn exige adapter → `MissingAdapter` error na inicialização.
 - **Causa 2**: O login usava `signIn` de `"next-auth/react"`, que não executa o fluxo WebAuthn (não ativa fingerprint/FaceID).

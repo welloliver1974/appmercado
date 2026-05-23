@@ -1,28 +1,20 @@
-import NextAuth from "next-auth";
+import { type NextRequest, NextResponse } from "next/server";
 
-export default NextAuth({
-  providers: [],
-  callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
-      const isAuthRoute = nextUrl.pathname === "/login";
+export default function proxy(request: NextRequest) {
+  const userId = request.cookies.get("user-id")?.value;
+  const isAuthRoute = request.nextUrl.pathname === "/login";
 
-      if (isAuthRoute) {
-        if (isLoggedIn) return Response.redirect(new URL("/", nextUrl));
-        return true;
-      }
+  if (isAuthRoute) {
+    if (userId) return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.next();
+  }
 
-      if (!isLoggedIn) {
-        return false;
-      }
+  if (!userId) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
 
-      return true;
-    },
-  },
-  pages: {
-    signIn: "/login",
-  },
-}).auth;
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
