@@ -54,7 +54,7 @@ export default function AssistentePage() {
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto mb-4 max-w-3xl mx-auto w-full">
-        {messages.map((msg, i) => (
+        {messages.map((msg: any, i: number) => (
           <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
             {msg.role === "assistant" && (
               <div className="p-2 bg-blue-600/20 rounded-xl h-fit shrink-0">

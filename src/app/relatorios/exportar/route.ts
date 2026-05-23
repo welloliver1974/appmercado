@@ -36,13 +36,13 @@ export async function GET(request: NextRequest) {
 
   if (formato === "csv") {
     const header = "Mercado;Data;Produto;Quantidade;Unidade;Preço Unitário;Preço Total\n";
-    const rows = receipts.flatMap((r) =>
+    const rows = receipts.flatMap((r: any) =>
       r.items.map(
-        (i) =>
+        (i: any) =>
           `${r.market.name};${new Date(r.date).toLocaleDateString("pt-BR")};${i.product.name};${i.quantity};${i.product.unit};${i.unitPrice.toFixed(2).replace(".", ",")};${i.totalPrice.toFixed(2).replace(".", ",")}`
       )
     );
-    const total = receipts.reduce((sum, r) => sum + r.totalAmount, 0);
+    const total = receipts.reduce((sum: number, r: any) => sum + r.totalAmount, 0);
     const footer = `\nTotal Gasto;${total.toFixed(2).replace(".", ",")};;;;;\n`;
 
     return new NextResponse(`\uFEFF${header}${rows.join("\n")}${footer}`, {

@@ -152,7 +152,7 @@ export async function analyzeSpendingTrend(monthlyTotals: { month: string; total
 }> {
   const openai = getClient();
   if (!openai) {
-    const avg = monthlyTotals.reduce((s, m) => s + m.total, 0) / monthlyTotals.length;
+    const avg = monthlyTotals.reduce((s: number, m: { month: string; total: number }) => s + m.total, 0) / monthlyTotals.length;
     return { prediction: avg, insight: `Média dos últimos ${monthlyTotals.length} meses. Configure a IA para análise avançada.` };
   }
 
@@ -181,7 +181,7 @@ A previsão deve ser para o próximo mês baseada na tendência dos dados.`
 
     return JSON.parse(response.choices[0].message.content || "{}");
   } catch {
-    const avg = monthlyTotals.reduce((s, m) => s + m.total, 0) / monthlyTotals.length;
+    const avg = monthlyTotals.reduce((s: number, m: { month: string; total: number }) => s + m.total, 0) / monthlyTotals.length;
     return { prediction: avg, insight: "Previsão baseada na média simples (IA indisponível no momento)." };
   }
 }
@@ -197,7 +197,7 @@ export async function detectPriceAnomaly(
   if (priceHistory.length < 2) return null;
 
   try {
-    const avg = priceHistory.reduce((s, p) => s + p.price, 0) / priceHistory.length;
+    const avg = priceHistory.reduce((s: number, p: { date: string; price: number }) => s + p.price, 0) / priceHistory.length;
     const deviation = ((currentPrice - avg) / avg) * 100;
 
     if (Math.abs(deviation) < 15) return null;

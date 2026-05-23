@@ -38,14 +38,14 @@ export default async function NotasPage(props: { searchParams?: Promise<{ q?: st
   });
 
   let filtered = query
-    ? receipts.filter((r) =>
+    ? receipts.filter((r: any) =>
         r.market.name.toLowerCase().includes(query) ||
-        r.items.some((i) => i.product.name.toLowerCase().includes(query))
+        r.items.some((i: any) => i.product.name.toLowerCase().includes(query))
       )
     : receipts;
 
   if (mercadoId) {
-    filtered = filtered.filter((r) => r.marketId === mercadoId);
+    filtered = filtered.filter((r: any) => r.marketId === mercadoId);
   }
 
   return (
@@ -68,7 +68,7 @@ export default async function NotasPage(props: { searchParams?: Promise<{ q?: st
             <p className="text-zinc-500">{query ? "Nenhuma nota encontrada." : "Nenhuma nota cadastrada."}</p>
           </div>
         ) : (
-          filtered.map((receipt) => (
+          filtered.map((receipt: any) => (
             <div key={receipt.id} className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 flex items-center justify-between group hover:border-blue-500/30 transition-all">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 font-bold text-sm group-hover:bg-blue-600 group-hover:text-white transition-all">

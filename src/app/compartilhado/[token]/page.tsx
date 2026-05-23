@@ -39,7 +39,7 @@ export default async function SharedListPage({ params }: { params: Promise<{ tok
           </div>
         ) : (
           <div className="space-y-3">
-            {items.map((item, i) => (
+            {items.map((item: any, i: number) => (
               <div key={i} className="bg-zinc-900 p-4 rounded-xl border border-zinc-800 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="h-5 w-5 rounded border-2 border-zinc-700" />

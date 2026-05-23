@@ -45,14 +45,14 @@ export default async function AnalisePage() {
   });
 
   const productAnalysis = (products as unknown as ProductWithItems[])
-    .filter((p) => p.items.length > 0)
-    .map((product) => {
-      const prices = product.items.map((item) => item.unitPrice);
+    .filter((p: any) => p.items.length > 0)
+    .map((product: any) => {
+      const prices = product.items.map((item: any) => item.unitPrice);
       const minPrice = Math.min(...prices);
       const maxPrice = Math.max(...prices);
-      const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
+      const avgPrice = prices.reduce((a: number, b: number) => a + b, 0) / prices.length;
 
-      const bestMarket = product.items.find((item) => item.unitPrice === minPrice)?.receipt.market.name;
+      const bestMarket = product.items.find((item: any) => item.unitPrice === minPrice)?.receipt.market.name;
 
       const pricesByMarket: Record<string, { price: number; count: number }> = {};
       for (const item of product.items) {
@@ -90,7 +90,7 @@ export default async function AnalisePage() {
             Ainda não há dados suficientes para analisar preços. Cadastre algumas notas primeiro!
           </div>
         ) : (
-          productAnalysis.map((product) => (
+          productAnalysis.map((product: any) => (
             <div key={product.id} className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-6 hover:border-blue-500/30 transition-all shadow-xl">
               <div className="flex items-start justify-between">
                 <div>
@@ -136,8 +136,8 @@ export default async function AnalisePage() {
                   <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Preços por Mercado</p>
                 </div>
                 {Object.entries(product.pricesByMarket)
-                  .sort(([, a], [, b]) => a.price - b.price)
-                  .map(([market, data]) => (
+                  .sort(([, a]: [string, any], [, b]: [string, any]) => a.price - b.price)
+                  .map(([market, data]: [string, any]) => (
                     <div key={market} className="flex items-center justify-between text-sm">
                       <div className="flex items-center gap-2">
                         <div className={`w-2 h-2 rounded-full ${data.price === product.minPrice ? "bg-emerald-500" : "bg-zinc-600"}`} />

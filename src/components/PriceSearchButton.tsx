@@ -52,7 +52,7 @@ export function PriceSearchButton({ productName }: { productName: string }) {
           <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider flex items-center gap-1">
             <Search className="h-3 w-3" /> Preços encontrados na web
           </p>
-          {results.map((r, i) => (
+          {results.map((r: any, i: number) => (
             <a
               key={i}
               href={r.link}

@@ -7,8 +7,8 @@ export async function POST(request: Request) {
   const cookieHeader = request.headers.get("cookie") || "";
   const userId = cookieHeader
     .split(";")
-    .map((c) => c.trim())
-    .find((c) => c.startsWith("user-id="))
+    .map((c: string) => c.trim())
+    .find((c: string) => c.startsWith("user-id="))
     ?.split("=")[1];
 
   if (!userId) {

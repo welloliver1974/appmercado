@@ -17,7 +17,7 @@ export default async function RelatoriosPage() {
 
   const availableMonths = Array.from(
     new Set(
-      months.map((r) => {
+      months.map((r: any) => {
         const d = new Date(r.date);
         return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
       })
@@ -40,7 +40,7 @@ export default async function RelatoriosPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {availableMonths.map((ym) => {
+          {availableMonths.map((ym: string) => {
             const [year, month] = ym.split("-");
             const label = new Date(Number(year), Number(month) - 1).toLocaleDateString("pt-BR", {
               month: "long",

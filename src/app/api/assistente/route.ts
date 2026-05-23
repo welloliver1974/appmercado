@@ -43,7 +43,7 @@ export async function POST(request: Request) {
   ]);
 
   const recentPurchases = (recentReceipts as unknown as ReceiptWithMarket[])
-    .map((r) => `${r.market.name} (${r.date.toLocaleDateString("pt-BR")}): R$ ${r.totalAmount.toFixed(2)}`)
+    .map((r: any) => `${r.market.name} (${r.date.toLocaleDateString("pt-BR")}): R$ ${r.totalAmount.toFixed(2)}`)
     .join(" | ");
 
   const monthMap = new Map<string, number>();
@@ -52,8 +52,8 @@ export async function POST(request: Request) {
     monthMap.set(key, (monthMap.get(key) || 0) + (r._sum.totalAmount || 0));
   }
   const monthlyHistory = Array.from(monthMap.entries())
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([m, v]) => `${m}: R$ ${v.toFixed(2)}`)
+    .sort(([a]: [string, any], [b]: [string, any]) => a.localeCompare(b))
+    .map(([m, v]: [string, any]) => `${m}: R$ ${v.toFixed(2)}`)
     .join(" | ");
 
   const response = await askAssistant(message, {

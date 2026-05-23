@@ -23,7 +23,7 @@ export async function shareShoppingList() {
     orderBy: { name: "asc" },
   });
 
-  const items = lowStockProducts.map((p) => ({
+  const items = lowStockProducts.map((p: any) => ({
     name: p.name,
     category: p.category.name,
     stock: p.stock,

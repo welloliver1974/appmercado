@@ -65,7 +65,7 @@ export default async function Home() {
   }
   const monthlyArray = Array.from(monthsMap.entries()).sort();
   const lastMonths = monthlyArray.slice(-3);
-  const monthlyForAI = lastMonths.map(([m, v]) => ({ month: m, total: v }));
+  const monthlyForAI = lastMonths.map(([m, v]: [string, number]) => ({ month: m, total: v }));
 
   const trendResult = await analyzeSpendingTrend(monthlyForAI);
   const prediction = trendResult.prediction > 0 ? trendResult.prediction : totalSpentMonth._sum.totalAmount || 0;
@@ -95,7 +95,7 @@ export default async function Home() {
   const anomalies: { name: string; currentPrice: number; reason: string }[] = [];
   for (const product of productsWithHistory) {
     if (product.items.length < 2) continue;
-    const priceHistory = product.items.map(i => ({
+    const priceHistory = product.items.map((i: any) => ({
       date: i.receipt.date.toISOString(),
       price: i.unitPrice,
     }));
@@ -136,7 +136,7 @@ export default async function Home() {
       </div>
 
       <CriticalStockAlert
-        items={criticalProducts.map((p) => ({ id: p.id, name: p.name, stock: p.stock, unit: p.unit }))}
+        items={criticalProducts.map((p: any) => ({ id: p.id, name: p.name, stock: p.stock, unit: p.unit }))}
       />
 
       {/* Stats Grid */}
@@ -258,7 +258,7 @@ export default async function Home() {
                 <h4 className="font-bold text-sm text-red-300">Preços Anormais Detectados</h4>
               </div>
               <div className="space-y-2">
-                {anomalies.map((a, i) => (
+                {anomalies.map((a: any, i: number) => (
                   <div key={i} className="text-xs text-zinc-300 bg-red-950/30 rounded-lg px-3 py-2 flex items-center justify-between">
                     <span>{a.name}</span>
                     <span className="text-red-400">{a.reason}</span>
