@@ -162,4 +162,20 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 
 ---
 
+## 🐛 Correções Pós-Lançamento (22/05/2026)
+
+### Página /mercados
+- Criada página de listagem de mercados com total de notas e gastos.
+- Botão "Novo Mercado" com modal para cadastro manual (sem precisar de nota).
+
+### Página /config
+- Criada página de configurações com informações da conta e instruções PWA.
+- Formulário de alteração de nome usando API route (`/api/config/name`) via fetch.
+
+### Dashboard
+- Saudação dinâmica (Bom dia / Boa tarde / Boa noite).
+- Nome extraído do email automaticamente no cadastro.
+
+---
+
 *Log gerado em 22/05/2026*
