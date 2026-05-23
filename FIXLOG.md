@@ -135,6 +135,12 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 - Link direto pra página de estoque.
 
 ### 9. Análise de Preços por Mercado (Multi-mercado)
+
+### 10. Compartilhar Lista de Compras
+- Botão "Compartilhar" na página `/lista-compras` gera link único com validade de 7 dias.
+- Link é copiado automaticamente para a área de transferência.
+- Página pública `/compartilhado/[token]` exibe a lista sem necessidade de login.
+- Modelo `SharedList` no banco com token único e data de expiração.
 - Página `/analise` agora exibe tabela de preços por mercado para cada produto.
 - Destaque visual para o mercado com menor preço (tag "MELHOR").
 - Ordenação automática do mais barato ao mais caro.

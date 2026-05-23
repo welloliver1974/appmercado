@@ -3,12 +3,12 @@ import {
   ShoppingCart, 
   CheckSquare, 
   Plus, 
-  Printer, 
-  Share2,
+  Printer,
   Package,
   AlertCircle
 } from "lucide-react";
 import { auth } from "@/auth";
+import { ShareListButton } from "@/components/ShareListButton";
 
 export default async function ListaComprasPage() {
   const session = await auth();
@@ -48,10 +48,7 @@ export default async function ListaComprasPage() {
             <Printer className="h-4 w-4" />
             Imprimir
           </button>
-          <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-500 transition-all shadow-lg shadow-blue-900/20">
-            <Share2 className="h-4 w-4" />
-            Compartilhar
-          </button>
+          <ShareListButton />
         </div>
       </div>
 

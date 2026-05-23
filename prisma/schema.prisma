@@ -25,9 +25,10 @@ model User {
   updatedAt DateTime @updatedAt
 
   // App Data Relation
-  receipts  Receipt[]
-  markets   Market[]
-  products  Product[]
+  receipts     Receipt[]
+  markets      Market[]
+  products     Product[]
+  sharedLists  SharedList[]
 }
 
 model Account {
@@ -85,6 +86,17 @@ model Authenticator {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, credentialID])
+}
+
+// Shared Lists
+model SharedList {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  items     String
+  createdAt DateTime @default(now())
+  expiresAt DateTime
 }
 
 // App Models
