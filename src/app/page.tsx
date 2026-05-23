@@ -96,7 +96,7 @@ export default async function Home() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-white flex items-center gap-2">
-            {greeting}, {displayName}! 👋
+            {greeting}, {displayName}! <ShoppingCart className="h-6 w-6 inline text-blue-500" />
           </h2>
           <p className="text-zinc-400 text-sm">Aqui está o resumo das suas compras este mês.</p>
         </div>
