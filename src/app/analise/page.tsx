@@ -1,14 +1,25 @@
 import { prisma } from "@/lib/prisma";
 import { 
   TrendingUp, 
-  Search, 
-  ArrowDown, 
   ArrowUp, 
-  Minus,
   Store,
-  Tag
+  Tag,
+  BarChart3
 } from "lucide-react";
 import { auth } from "@/auth";
+
+interface ItemWithReceipt {
+  unitPrice: number;
+  receipt: { market: { name: string; id: string } };
+}
+
+interface ProductWithItems {
+  id: string;
+  name: string;
+  unit: string;
+  stock: number;
+  items: ItemWithReceipt[];
+}
 
 export default async function AnalisePage() {
   const session = await auth();
@@ -31,14 +42,21 @@ export default async function AnalisePage() {
     }
   });
 
-  const productAnalysis = products.map((product: any) => {
-    const prices = product.items.map((item: any) => item.unitPrice);
+  const productAnalysis = (products as unknown as ProductWithItems[]).map((product) => {
+    const prices = product.items.map((item) => item.unitPrice);
     const minPrice = Math.min(...prices);
     const maxPrice = Math.max(...prices);
-    const avgPrice = prices.reduce((a: number, b: number) => a + b, 0) / prices.length;
-    
-    const bestMarket = product.items.find((item: any) => item.unitPrice === minPrice)?.receipt.market.name;
-    const lastPrice = product.items[product.items.length - 1]?.unitPrice;
+    const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
+
+    const bestMarket = product.items.find((item) => item.unitPrice === minPrice)?.receipt.market.name;
+
+    const pricesByMarket: Record<string, { price: number; count: number }> = {};
+    for (const item of product.items) {
+      const name = item.receipt.market.name;
+      if (!pricesByMarket[name]) pricesByMarket[name] = { price: Infinity, count: 0 };
+      if (item.unitPrice < pricesByMarket[name].price) pricesByMarket[name].price = item.unitPrice;
+      pricesByMarket[name].count++;
+    }
 
     return {
       ...product,
@@ -46,9 +64,9 @@ export default async function AnalisePage() {
       maxPrice,
       avgPrice,
       bestMarket,
-      lastPrice
+      pricesByMarket,
     };
-  }).filter((p: any) => p.items.length > 0);
+  }).filter((p) => p.items.length > 0);
 
   return (
     <div className="p-8 space-y-8 bg-black min-h-screen text-white">
@@ -58,7 +76,7 @@ export default async function AnalisePage() {
             <TrendingUp className="h-8 w-8 text-blue-500" />
             Análise de Preços
           </h1>
-          <p className="text-zinc-400 text-sm mt-1">Descubra onde seus produtos favoritos estão mais baratos.</p>
+          <p className="text-zinc-400 text-sm mt-1">Compare preços entre mercados e encontre as melhores ofertas.</p>
         </div>
       </div>
 
@@ -68,7 +86,7 @@ export default async function AnalisePage() {
             Ainda não há dados suficientes para analisar preços. Cadastre algumas notas primeiro!
           </div>
         ) : (
-          productAnalysis.map((product: any) => (
+          productAnalysis.map((product) => (
             <div key={product.id} className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-6 hover:border-blue-500/30 transition-all shadow-xl">
               <div className="flex items-start justify-between">
                 <div>
@@ -108,13 +126,32 @@ export default async function AnalisePage() {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-zinc-800">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-zinc-500">Variação total:</p>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">
-                    {(((product.maxPrice - product.minPrice) / product.minPrice) * 100).toFixed(0)}% de diferença
-                  </span>
+              <div className="pt-4 border-t border-zinc-800 space-y-3">
+                <div className="flex items-center gap-2">
+                  <BarChart3 className="h-4 w-4 text-blue-400" />
+                  <p className="text-xs text-zinc-500 font-bold uppercase tracking-wider">Preços por Mercado</p>
                 </div>
+                {Object.entries(product.pricesByMarket)
+                  .sort(([, a], [, b]) => a.price - b.price)
+                  .map(([market, data]) => (
+                    <div key={market} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-2 h-2 rounded-full ${data.price === product.minPrice ? "bg-emerald-500" : "bg-zinc-600"}`} />
+                        <span className="text-zinc-400">{market}</span>
+                        {data.price === product.minPrice && (
+                          <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 px-1.5 py-0.5 rounded">MELHOR</span>
+                        )}
+                      </div>
+                      <span className="font-bold text-white">R$ {data.price.toFixed(2)}</span>
+                    </div>
+                  ))}
+              </div>
+
+              <div className="pt-2 flex items-center justify-between">
+                <p className="text-xs text-zinc-500">Variação total:</p>
+                <span className="text-xs font-bold px-2 py-0.5 rounded bg-zinc-800 text-zinc-300">
+                  {(((product.maxPrice - product.minPrice) / product.minPrice) * 100).toFixed(0)}% de diferença
+                </span>
               </div>
             </div>
           ))

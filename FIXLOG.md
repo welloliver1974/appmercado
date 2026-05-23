@@ -134,6 +134,12 @@ Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env
 - Envia notificação do navegador (API Notification) automaticamente se permitido.
 - Link direto pra página de estoque.
 
+### 9. Análise de Preços por Mercado (Multi-mercado)
+- Página `/analise` agora exibe tabela de preços por mercado para cada produto.
+- Destaque visual para o mercado com menor preço (tag "MELHOR").
+- Ordenação automática do mais barato ao mais caro.
+- Aproveita dados existentes: cada `ReceiptItem` já está vinculado a um `Receipt` com `Market`.
+
 ---
 
 *Log gerado em 22/05/2026*
