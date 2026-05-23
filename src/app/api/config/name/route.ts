@@ -12,7 +12,8 @@ export async function POST(request: Request) {
     ?.split("=")[1];
 
   if (!userId) {
-    return Response.redirect(`${origin}/config?erro=nao-autenticado`, 302);
+    console.log("[debug] cookie header raw:", cookieHeader);
+    return Response.redirect(`${origin}/config?erro=${encodeURIComponent("cookie: " + cookieHeader)}`, 302);
   }
 
   const text = await request.text();
