@@ -6,7 +6,7 @@ const config = {
   openrouter: {
     apiKey: process.env.OPENROUTER_API_KEY,
     baseURL: "https://openrouter.ai/api/v1",
-    model: "meta-llama/llama-3.2-11b-vision-instruct:free", // Ou outro modelo de sua preferência
+    model: "meta-llama/llama-3.2-11b-vision-instruct:free",
   },
   groq: {
     apiKey: process.env.GROQ_API_KEY,
@@ -15,18 +15,32 @@ const config = {
   },
 };
 
-const activeConfig = provider === "groq" ? config.groq : config.openrouter;
+function getClient() {
+  const activeConfig = provider === "groq" ? config.groq : config.openrouter;
 
-const openai = new OpenAI({
-  apiKey: activeConfig.apiKey,
-  baseURL: activeConfig.baseURL,
-  dangerouslyAllowBrowser: true // Apenas para facilitar o dev, o ideal é via Server Action
-});
+  if (!activeConfig.apiKey || activeConfig.apiKey === "your_key_here") {
+    return null;
+  }
+
+  return new OpenAI({
+    apiKey: activeConfig.apiKey,
+    baseURL: activeConfig.baseURL,
+    dangerouslyAllowBrowser: true,
+  });
+}
 
 export async function processReceiptImage(base64Image: string) {
+  const openai = getClient();
+  if (!openai) {
+    return {
+      error: true,
+      message: "API de IA não configurada. Configure OPENROUTER_API_KEY ou GROQ_API_KEY no .env",
+    };
+  }
+
   try {
     const response = await openai.chat.completions.create({
-      model: activeConfig.model,
+      model: provider === "groq" ? config.groq.model : config.openrouter.model,
       messages: [
         {
           role: "user",
@@ -59,6 +73,6 @@ export async function processReceiptImage(base64Image: string) {
     return JSON.parse(response.choices[0].message.content || "{}");
   } catch (error) {
     console.error("Erro ao processar imagem com IA:", error);
-    throw error;
+    return { error: true, message: "Erro ao processar imagem. Verifique sua chave de API." };
   }
 }

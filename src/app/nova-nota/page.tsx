@@ -34,10 +34,14 @@ export default function NovaNota() {
     try {
       const base64 = image.split(",")[1];
       const data = await processReceiptImage(base64);
-      setReceiptData(data);
+      if (data?.error) {
+        alert(data.message || "Erro ao processar imagem. API não configurada.");
+      } else {
+        setReceiptData(data);
+      }
     } catch (error) {
       console.error(error);
-      alert("Erro ao processar imagem. Verifique sua chave de API no arquivo .env");
+      alert("Erro ao processar imagem.");
     } finally {
       setLoading(false);
     }
