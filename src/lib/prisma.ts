@@ -16,8 +16,8 @@ function createPrisma() {
     return new PrismaClient({ adapter, log: ["query"] });
   }
   const ctx = getCloudflareContext();
-  const db = (ctx.env as any).DB;
-  if (!db) throw new Error("D1 binding DB não encontrada");
+  const db = (ctx.env as any).appmercado_db;
+  if (!db) throw new Error("D1 binding appmercado_db não encontrada");
   const adapter = new PrismaD1(db);
   return new PrismaClient({ adapter });
 }

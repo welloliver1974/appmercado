@@ -22,9 +22,9 @@
   },
   "d1_databases": [
     {
-      "binding": "DB",
+      "binding": "appmercado_db",
       "database_name": "appmercado-db",
-      "database_id": "SEU_DATABASE_ID_AQUI"
+      "database_id": "531c28d7-acff-4e8d-a8d0-4d42a6e98ba6"
     }
   ]
 }
