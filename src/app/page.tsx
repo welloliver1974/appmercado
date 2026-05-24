@@ -19,6 +19,8 @@ import { auth } from "@/auth";
 import { CriticalStockAlert } from "@/components/notifications/CriticalStockAlert";
 import { analyzeSpendingTrend, detectPriceAnomaly } from "@/lib/ai";
 
+export const runtime = "nodejs";
+
 export default async function Home() {
   const prisma = await getPrisma();
   const session = await auth();

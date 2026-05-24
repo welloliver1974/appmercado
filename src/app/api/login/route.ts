@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getPrisma } from '@/lib/prisma';
 
+export const runtime = "nodejs";
+
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
   const email = formData.get('email') as string;
