@@ -70,18 +70,18 @@ export default function NovaNota() {
   const handleQRScan = async (qr: { accessKey: string; totalAmount?: number; rawUrl: string }) => {
     setLoading(true);
     // Tenta buscar dados direto da SEFAZ
-    const result = await fetchQRReceiptAction(qr.rawUrl);
-    if (result?.error || !result?.marketName) {
-      // Fallback: usa dados do QR
+    const result = await fetchQRReceiptAction(qr.rawUrl, qr.accessKey);
+    // Se falhou ou retorno parcial, usa fallback com dados do accessKey
+    if (result?.error || result?._partial || !result?.marketName || result.marketName === "Mercado") {
       const year = 2000 + parseInt(qr.accessKey.substring(2, 4), 10);
       const month = parseInt(qr.accessKey.substring(4, 6), 10) - 1;
       const date = new Date(year, Math.max(0, month), 1).toISOString().split("T")[0];
       const cnpj = qr.accessKey.substring(6, 20);
       setReceiptData({
-        marketName: result?.marketName || `Mercado CNPJ ${cnpj}`,
-        date,
-        totalAmount: qr.totalAmount || 0,
-        items: [],
+        marketName: result?.marketName && !result?._partial ? result.marketName : `Mercado CNPJ ${cnpj}`,
+        date: result?.date || date,
+        totalAmount: qr.totalAmount || result?.totalAmount || 0,
+        items: result?.items || [],
         qrCode: qr.rawUrl,
       });
     } else {

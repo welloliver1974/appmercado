@@ -12,24 +12,41 @@ interface QRResult {
 function parseQRData(url: string): QRResult | null {
   try {
     const parsed = new URL(url);
+    let accessKey = "";
+    let totalAmount: number | undefined;
+
+    // Tenta parâmetro p (formato NFC-e padrão: chave|versão|tpEmis|cDest|total|...)
     const p = parsed.searchParams.get("p");
-    if (!p) return null;
-    const fields = decodeURIComponent(p).split("|");
-    const accessKey = fields[0]?.replace(/\D/g, "");
-    if (!accessKey || accessKey.length !== 44) return null;
-      const result: QRResult = { accessKey, rawUrl: url };
-      // Tenta extrair total dos fields (formato NFC-e: chave|versão|tpEmis|cDest|total|...)
-      for (const idx of [4, 3]) {
-        const raw = fields[idx];
-        if (raw && raw.trim()) {
-          const total = parseFloat(raw.replace(",", "."));
-          if (!isNaN(total) && total > 0) {
-            result.totalAmount = total;
-            break;
+    if (p) {
+      const fields = decodeURIComponent(p).split("|");
+      const ak = fields[0]?.replace(/\D/g, "");
+      if (ak && ak.length === 44) {
+        accessKey = ak;
+        for (const idx of [4, 3]) {
+          const raw = fields[idx];
+          if (raw && raw.trim()) {
+            const total = parseFloat(raw.replace(",", "."));
+            if (!isNaN(total) && total > 0) {
+              totalAmount = total;
+              break;
+            }
           }
         }
       }
-    return result;
+    }
+
+    // Fallback: tenta chaveNFe direto (SP e outros estados)
+    if (!accessKey) {
+      const chave = parsed.searchParams.get("chaveNFe");
+      if (chave) {
+        const ak = chave.replace(/\D/g, "");
+        if (ak.length === 44) accessKey = ak;
+      }
+    }
+
+    if (!accessKey) return null;
+
+    return { accessKey, totalAmount, rawUrl: url };
   } catch {
     return null;
   }
@@ -54,28 +71,23 @@ async function decodeQR(img: HTMLImageElement): Promise<string | null> {
     const { default: jsQR } = await import("jsqr");
     const bitmap = await createImageBitmap(img);
     const canvas = document.createElement("canvas");
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
     const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(bitmap, 0, 0);
-    bitmap.close();
 
-    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-    const code = jsQR(imageData.data, imageData.width, imageData.height);
-    if (code) return code.data;
-
-    // Tenta com imagem reduzida (QR muito denso em resolução alta)
-    const scale = Math.min(1200 / canvas.width, 1200 / canvas.height, 1);
-    if (scale < 1) {
-      const sw = Math.round(canvas.width * scale);
-      const sh = Math.round(canvas.height * scale);
+    // Tenta com resolução reduzida primeiro (1200px máx)
+    // QR denso é mais legível em resolução moderada, e evita crash em imagem 4000x3000
+    for (const maxDim of [1200, 800, 1600]) {
+      const scale = Math.min(maxDim / bitmap.width, maxDim / bitmap.height, 1);
+      const sw = Math.round(bitmap.width * scale);
+      const sh = Math.round(bitmap.height * scale);
+      if (sw === 0 || sh === 0) continue;
       canvas.width = sw;
       canvas.height = sh;
-      ctx.drawImage(img, 0, 0, sw, sh);
-      const smallData = ctx.getImageData(0, 0, sw, sh);
-      const smallCode = jsQR(smallData.data, smallData.width, smallData.height);
-      if (smallCode) return smallCode.data;
+      ctx.drawImage(bitmap, 0, 0, sw, sh);
+      const imageData = ctx.getImageData(0, 0, sw, sh);
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      if (code) { bitmap.close(); return code.data; }
     }
+    bitmap.close();
   } catch { /* jsQR unavailable */ }
 
   return null;

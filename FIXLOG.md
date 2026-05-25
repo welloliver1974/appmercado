@@ -147,7 +147,27 @@ Criado `scripts/inline-chunks.mjs` para ler os 81 chunks SSR e embuti-los no `ha
 
 ---
 
+---
+
+## 2026-05-25 — Melhorias QR Code + Extração SEFAZ SP
+
+### QR Code — Leitura mais robusta
+- **`parseQRData`**: Agora também aceita parâmetro `chaveNFe` (usado por SP), não só `p`
+- **`decodeQR` (jsQR)**: Inverteu a ordem — tenta primeiro com resolução reduzida (1200px), depois 800px, depois 1600px. Antes tentava resolução total (4000×3000) que travava jsQR no celular
+- Removeu tentativa de full-res que causava timeout/crash em imagens grandes de câmera moderna
+
+### SEFAZ — Extração específica para SP
+- **Detecção de estado**: `fetchQRReceiptAction` agora identifica SP pelo domínio `fazenda.sp.gov.br`
+- **Patterns SP**: Adicionados patterns específicos para o HTML do DANFE de SP:
+  - Nome do mercado: busca "Razão Social" no HTML renderizado pelo XSLT da SEFAZ SP
+  - Itens: parseia `div.tx` (formato do DANFE SP) — agrupa em grupos de 4 (descrição, qtd, un, preço)
+  - Total: patterns específicos incluindo "VALOR A PAGAR"
+- **Detecção de CAPTCHA**: Se a página retorna CAPTCHA ou "Página não encontrada", já retorna erro imediatamente
+- **Validação de dados**: Se o nome do mercado parece genérico ("Mercado CNPJ..."), marca `_partial: true` para o frontend usar fallback do accessKey
+- **Fallback inteligente**: `handleQRScan` agora verifica `_partial` e mescla dados do accessKey (data do ano/mês, CNPJ) com o que veio da SEFAZ
+
 ### Issues Abertas
 - [ ] Testar fluxo completo no celular (foto → IA → salvar → ver nota)
-- [ ] Validar extração SEFAZ para diferentes estados
+- [ ] Validar extração SEFAZ SP com nota real
+- [ ] Validar extração SEFAZ para outros estados (BA, MG, RJ, etc.)
 - [ ] Verificar precisão do modelo Groq para leitura de notas fiscais brasileiras
