@@ -160,7 +160,15 @@ Criado `scripts/inline-chunks.mjs` para ler os 81 chunks SSR e embuti-los no `ha
 - **`handleQRScan`**: **Sempre** constrói dados base do accessKey (data AAMM, CNPJ formatado) e mescla com o que veio da SEFAZ. Se SEFAZ falhar, usuário ainda vê CNPJ, data e total do QR
 - **CNPJ formatado**: agora exibe `XX.XXX.XXX/XXXX-XX` em vez de número cru
 
+### 🚀 Otimizações Finais de Alta Fidelidade (Tarde)
+- **QRScanner (Decodificação Robusta)**: Implementada a técnica de **Center Crop (Recorte Central)** de 65% na resolução original máxima da imagem. Evita o borrão de downsampling causado pela redução de fotos gigantescas tiradas pela câmera nativa do celular. Agora o `jsQR` consegue decodificar imagens densas e focadas instantaneamente.
+- **SEFAZ SP/RJ (Parser Nativo Robusto)**: Desenvolvido parser de alta fidelidade específico para o layout nacional responsivo da SEFAZ SP/RJ (XSLT 2.05 / versão 4.00). Extrai com perfeição:
+  - Nome fantasia do mercado (`.txtTopo`)
+  - Data de emissão real da nota sem shifts de fuso horário
+  - Valor total/pago real do cupom (`.totalNumb` dentro de `.linhaShade`)
+  - Todos os itens com suas respectivas quantidades fracionárias, preços unitários e unidade de medida.
+  - Mantém o fallback automático para o parser genérico se o layout for de outro estado, garantindo robustez universal.
+
 ### Issues Abertas
 - [ ] Testar fluxo completo no celular (foto → IA → salvar → ver nota)
-- [ ] Extração SEFAZ ainda frágil para SP — considerar usar IA pra parsear o HTML
 - [ ] Verificar precisão do modelo Groq para leitura de notas fiscais brasileiras

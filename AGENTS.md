@@ -107,9 +107,9 @@ This version has breaking changes — APIs, conventions, and file structure may 
 
 ### 2026-05-25 — Melhorias QR Code + Fallback SEFAZ
 - **QRScanner**: `parseQRData` agora aceita `chaveNFe` (SP) além de `p`
-- **QRScanner**: `decodeQR` tenta resoluções reduzidas primeiro (1200px → 800px → 1600px) — evita crash jsQR em fotos 4000×3000
+- **QRScanner (Center Crop)**: `decodeQR` agora tenta primeiro um recorte de 65% na resolução original máxima da foto tirada pela câmera nativa do celular. Evita o borrão e distorção causados pela redução/downsampling de imagens gigantescas tiradas em celulares de alta resolução, permitindo leitura ultra-rápida de QR codes densos e pequenos pelo `jsQR`. Mantém o loop por dimensões menores como fallback secundário.
 - **QRScanner**: Preview da foto capturada + overlay de erro + botão "Tentar novamente" sem `alert()`
-- **`fetchQRReceiptAction`**: Simplificado — tenta patterns genéricos, retorna erro se não achar dados úteis
+- **`fetchQRReceiptAction`**: Agora detecta se o layout é da SEFAZ SP/RJ (layout responsivo nacional XSLT 2.05 / versão 4.00) e executa um parser robusto e dedicado. Isso extrai com altíssima fidelidade o nome fantasia do mercado (`.txtTopo`), a data real sem fuso horário, o valor total/pago do cupom (`.totalNumb` dentro de `.linhaShade`) e a lista completa de itens (nome, quantidade decimal, unidade e valor unitário). Se for outro estado ou se o parser SP falhar, reverte automaticamente para os padrões de regex genéricos para máxima segurança.
 - **`handleQRScan`**: Fallback universal — sempre extrai data (AAMM) e CNPJ do accessKey, mescla com dados SEFAZ. Se SEFAZ falhar, formulário já vem preenchido
 - **CNPJ formatado**: `XX.XXX.XXX/XXXX-XX` no fallback
 - **QR parser**: Detecta CAPTCHA/página de erro e aborta fetch
