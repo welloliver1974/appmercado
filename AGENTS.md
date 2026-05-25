@@ -104,6 +104,15 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ### 2026-05-24 (tarde) — Correções Pós-Migração
 - **Server Action `processReceiptAction`** criada em `src/app/actions/ai.ts` — processamento de imagem roda 100% no servidor (onde `OPENROUTER_API_KEY`/`GROQ_API_KEY` existem)
 - **QR Scanner**: vídeo stream substituído por `<input type="file" capture>` (câmera nativa, resolução total do celular)
+
+### 2026-05-25 — Melhorias QR Code + Fallback SEFAZ
+- **QRScanner**: `parseQRData` agora aceita `chaveNFe` (SP) além de `p`
+- **QRScanner**: `decodeQR` tenta resoluções reduzidas primeiro (1200px → 800px → 1600px) — evita crash jsQR em fotos 4000×3000
+- **QRScanner**: Preview da foto capturada + overlay de erro + botão "Tentar novamente" sem `alert()`
+- **`fetchQRReceiptAction`**: Simplificado — tenta patterns genéricos, retorna erro se não achar dados úteis
+- **`handleQRScan`**: Fallback universal — sempre extrai data (AAMM) e CNPJ do accessKey, mescla com dados SEFAZ. Se SEFAZ falhar, formulário já vem preenchido
+- **CNPJ formatado**: `XX.XXX.XXX/XXXX-XX` no fallback
+- **QR parser**: Detecta CAPTCHA/página de erro e aborta fetch
 - **Modelos de IA atualizados**:
   - Groq visão: `llama-3.2-11b-vision-preview` (decommissioned) → `meta-llama/llama-4-scout-17b-16e-instruct`
   - Groq chat: `llama-3.1-8b-instant` → `llama-3.3-70b-versatile`
