@@ -1,3 +1,4 @@
+import { formatQty, formatCurrency } from "@/lib/format";
 import { getPrisma } from "@/lib/prisma";
 import { 
   Package, 
@@ -109,12 +110,12 @@ function ProductRow({ product }: { product: any }) {
       <td className="p-4">
         <div className="flex items-center gap-3">
           <span className={`text-lg font-mono font-bold ${isLowStock ? 'text-amber-500' : 'text-white'}`}>
-            {product.stock} <span className="text-xs font-normal text-zinc-500">{product.unit}</span>
+            {formatQty(product.stock)} <span className="text-xs font-normal text-zinc-500">{product.unit}</span>
           </span>
         </div>
       </td>
       <td className="p-4 font-mono text-emerald-400 font-bold">
-        {lastItem ? `R$ ${lastItem.unitPrice.toFixed(2)}` : '---'}
+        {lastItem ? formatCurrency(lastItem.unitPrice) : '---'}
       </td>
       <td className="p-4">
         {isLowStock ? (

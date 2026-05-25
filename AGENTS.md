@@ -10,12 +10,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
 ## Premissas
 - App pessoal, senha compartilhada via `AUTH_PASSWORD` no .env
 - Login: server action manual seta cookies `user-id` e `user-email` (7 dias)
-- Middleware (`src/middleware.ts`) verifica cookie `user-id` diretamente (Edge runtime)
+- Middleware foi removido; a verificação de cookie agora ocorre nas rotas/API conforme necessário
 - `auth()` em `src/auth.ts` lê cookie e busca user no banco (função customizada, sem NextAuth)
 - Todas API routes e server actions verificam `auth()` com escopo por `userId`
-- Prisma v7 com lazy init via Proxy — usa `@prisma/adapter-d1` no Cloudflare, `@prisma/adapter-libsql` local
-- Database: Cloudflare D1 (produção) / SQLite local `file:./dev.db` (desenvolvimento)
+- Prisma v7 com `@prisma/adapter-libsql` — SQLite local em dev, Turso em produção
+- Database: Turso (produção) / SQLite local `file:./dev.db` (desenvolvimento)
 - Next.js 16 com Turbopack
+- Deploy: Vercel
 
 ## Funcionalidades Implementadas
 
@@ -28,36 +29,105 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - `/` — Dashboard com gastos, estoque, previsão IA, alertas preço anormal, dicas
 - `/nova-nota` — Upload foto + QR code + IA pra extrair dados da nota
 - `/notas` — Histórico com busca por mercado e produto, filtro `?mercado=`
+- `/notas/[id]` — Detalhe da nota com itens + botão excluir
 - `/estoque` — Tabela com +/-, delete, busca por nome
-- `/lista-compras` — Itens com estoque ≤ 1, finalizar compras, compartilhar
+- `/lista-compras` — Itens com estoque ≤ 1, finalizar compras, compartilhar, deletar item
 - `/analise` — Comparação de preços por mercado + botão "Preço online" (DuckDuckGo)
 - `/relatorios` — CSV mensal
-- `/mercados` — Lista + adicionar manual
+- `/mercados` — Lista + adicionar manual + deletar mercado
 - `/config` — Editar nome, info da conta
 - `/assistente` — Chat IA sobre gastos
 - `/compartilhado/[token]` — Lista pública temporária
 - `/offline` — Fallback offline PWA
 
 ### IA (src/lib/ai.ts)
-- `processReceiptImage` — Ler foto da nota (OpenRouter/Groq, apenas server-side)
+- `processReceiptImage` — Ler foto da nota via API (Groq como padrão, fallback OpenRouter)
 - `categorizeProduct` — Classificar produto em categoria
 - `askAssistant` — Chat com dados do usuário
 - `analyzeSpendingTrend` — Previsão de gastos
 - `detectPriceAnomaly` — Alertar preço fora da média
 - `priceSearch.ts` — Busca preço online via DuckDuckGo HTML search + filtro de domínios de e-commerce brasileiros
 - Todas com fallback se API key não configurada
+- Modelo Groq visão atual: `meta-llama/llama-4-scout-17b-16e-instruct`
+- Modelo Groq chat atual: `llama-3.3-70b-versatile`
+- Modelo OpenRouter visão atual: `google/gemini-2.0-flash-exp:free`
 
-### Cloudflare Deploy
-- `npm run deploy` executa `opennextjs-cloudflare build && opennextjs-cloudflare deploy`
-- `npm run build` executa `next build` (OpenNext já chama build internamente)
-- Middleware: `src/middleware.ts` (Edge runtime, necessário para Cloudflare)
-- Prisma adapter: `@prisma/adapter-d1` (Cloudflare) / `@prisma/adapter-libsql` (local), lazy init via Proxy
-- Database: Cloudflare D1 (produção, binding `appmercado_db`) / SQLite local (desenvolvimento, `file:./dev.db`)
-- Worker size: ~700 KiB gzip (dentro do limite free de 3 MiB)
-- Configs versionadas: `wrangler.jsonc`, `open-next.config.ts`, `public/_headers`
+### QR Scanner (src/components/QRScanner.tsx)
+- Usa `<input type="file" capture="environment">` (câmera nativa, resolução máxima)
+- `BarcodeDetector` API nativa (Chrome/Safari) com fallback `jsQR`
+- `createImageBitmap` para corrigir orientação EXIF
+- Fallback de resolução reduzida para QR densos
+- Parse da chave NFC-e com correção de índices da data (AAMM)
+- Total tenta fields[4] e [3] do parâmetro `p`
+
+### Server Actions
+- `processReceiptAction` — Processa imagem com IA (server-side, lê env vars)
+- `saveReceiptAction` — Salva nota + itens + atualiza estoque (retorna erro, não throw)
+- `deleteReceiptAction` — Deleta nota e itens
+- `deleteMarketAction` — Deleta mercado + notas vinculadas
+- `deleteProductAction` — Deleta produto da lista de compras
+- `fetchQRReceiptAction` — Busca dados da nota direto da página NFCE (SEFAZ)
+- `getDashboardData` — Retorna dados da dashboard (usado pelo componente cliente)
+
+### Formatação pt-BR (src/lib/format.ts)
+- `formatQty()` — Exibe quantidades no formato brasileiro (1,735 kg em vez de 1.735 kg)
+- `formatCurrency()` — Exibe valores monetários no formato brasileiro (R$ 6,99)
+
+### Dashboard (src/app/page.tsx → DashboardClient.tsx)
+- Componente cliente com fetch assíncrono — nunca quebra o roteamento
+- Loading spinner enquanto carrega
+- Estado de erro com botão "Tentar novamente"
+- Página estática (○) em vez de dinâmica (ƒ)
+
+### Deploy (Vercel)
+- `vercel --prod` faz build + deploy automaticamente
+- `npm run build` executa `next build` (bundle padrão Next.js, sem OpenNext)
+- Database: Turso (produção) / SQLite local (desenvolvimento)
+- Sem Cloudflare, sem OpenNext, sem workarounds de chunk inlining
+- Deploy automático via GitHub: push na `main` dispara deploy na Vercel
+
+## Histórico de Migrações
+
+### 2026-05-24 — Cloudflare D1 → Vercel + Turso
+- Migrado de Cloudflare Workers (OpenNext) para Vercel (Next.js nativo)
+- Removido: `wrangler.jsonc`, `open-next.config.ts`, `scripts/inline-chunks.mjs`, `public/_headers`
+- Removidos pacotes: `@opennextjs/cloudflare`, `wrangler`, `@prisma/adapter-d1`
+- Substituído D1 por Turso (libSQL remoto) — mesma base SQLite
+- Criada migration inicial no Turso via `@libsql/client`
+- `src/lib/prisma.ts` simplificado: sempre usa `@prisma/adapter-libsql` com prioridade `TURSO_DATABASE_URL` > `DATABASE_URL`
+- Criada página de login (`/login`) com formulário — antes redirecionava em loop
+- Corrigido redirect infinito: home (`/`) redireciona para `/login` quando não autenticado
+- API login trocou `NextResponse.redirect` por `NextResponse.json` + `window.location.href` no cliente (cookies não persistiam com fetch seguindo redirect 307)
+- Env vars configuradas na Vercel: `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `AUTH_PASSWORD`, `AUTH_SECRET`, `OPENROUTER_API_KEY`, `GROQ_API_KEY`, `NEXT_PUBLIC_AI_PROVIDER` (agora `groq`)
+- URL de produção: https://appmercado-chi.vercel.app
+
+### 2026-05-24 (tarde) — Correções Pós-Migração
+- **Server Action `processReceiptAction`** criada em `src/app/actions/ai.ts` — processamento de imagem roda 100% no servidor (onde `OPENROUTER_API_KEY`/`GROQ_API_KEY` existem)
+- **QR Scanner**: vídeo stream substituído por `<input type="file" capture>` (câmera nativa, resolução total do celular)
+- **Modelos de IA atualizados**:
+  - Groq visão: `llama-3.2-11b-vision-preview` (decommissioned) → `meta-llama/llama-4-scout-17b-16e-instruct`
+  - Groq chat: `llama-3.1-8b-instant` → `llama-3.3-70b-versatile`
+  - OpenRouter visão: `meta-llama/llama-3.2-11b-vision-instruct:free` (404) → `google/gemini-2.0-flash-exp:free`
+- **QR data parsing corrigido**:
+  - Data: `substring(1,3)` → `substring(2,4)` para ano, `substring(3,5)` → `substring(4,6)` para mês
+  - Total: removeu restrição `version===2 && tpEmis===9`, tenta fields[4] e [3]
+- **Page crash ao salvar**: removido redirect automático (`window.location.href`). Agora mostra tela de sucesso com links manuais
+- **`saveReceiptAction`**: mudou de `throw new Error` para retornar `{ error, message }` (previnir Next.js error boundary no mobile)
+- **Notas clicáveis**: lista em `/notas` agora com `<Link>` para `/notas/[id]`. Página de detalhe criada com mercado, data, total, itens e botão excluir
+- **Imagem comprimida**: 1024px/quality 0.7 (otimizado para legibilidade da IA)
+- **Excluir nota**: botão em `/notas/[id]` com confirmação
+- **Excluir mercado**: botão em `/mercados` com confirmação (remove mercado + notas)
+- **Dashboard crash (mobile)**: convertido para componente cliente com fetch assíncrono (`getDashboardData`). Loading spinner + estado de erro com retry. Página estática.
+- **Prompt IA**: reformulado com instruções explícitas sobre formato decimal brasileiro e bom senso de quantidades
+- **Formato pt-BR**: criado `formatQty()` e `formatCurrency()` — todas as quantidades agora usam vírgula decimal e formato brasileiro
+- **QR SEFAZ**: `fetchQRReceiptAction` — server action que tenta buscar dados da nota direto da página NFCE, com múltiplos padrões de regex para diferentes estados
+- **Lista de compras**: botão de deletar item adicionado
+- **`deleteProductAction`**: server action para deletar produtos
+- **`deleteReceiptAction`** e **`deleteMarketAction`**: ações de deletar nota e mercado
 
 ### Packages Removidos
 - next-auth, @auth/prisma-adapter, @simplewebauthn/server, @simplewebauthn/browser — login só por senha
+- @opennextjs/cloudflare, wrangler, @prisma/adapter-d1 — migrado Cloudflare → Vercel
 - @google/generative-ai, better-sqlite3, clsx, date-fns, tailwind-merge — não usados
 
 ### PWA
@@ -74,24 +144,19 @@ This version has breaking changes — APIs, conventions, and file structure may 
 AUTH_PASSWORD=123456
 AUTH_SECRET=qualquer_coisa
 DATABASE_URL="file:./dev.db"
+TURSO_DATABASE_URL=  # preencher com URL do Turso (ex: libsql://meu-db.turso.io)
+TURSO_AUTH_TOKEN=    # preencher com token Turso
 OPENROUTER_API_KEY=  # opcional, para IA
 GROQ_API_KEY=        # opcional, alternativa OpenRouter
-NEXT_PUBLIC_AI_PROVIDER=openrouter  # ou groq
-```
-
-## Secrets Cloudflare (setar via `wrangler secret put` ou dashboard)
-```
-AUTH_PASSWORD=
-AUTH_SECRET=
-OPENROUTER_API_KEY=  # opcional
-GROQ_API_KEY=        # opcional
+NEXT_PUBLIC_AI_PROVIDER=groq  # groq (padrão) ou openrouter
 ```
 
 ## Observações Técnicas
 - `module.register()` deprecation warning do Turbopack — inofensivo
 - HMR warning resolvido via `allowedDevOrigins` no next.config.ts
-- Build local: `npx next build` (sem `--turbo` para build de produção)
-- D1 database: `appmercado-db` (ID `531c28d7-acff-4e8d-a8d0-4d42a6e98ba6`)
-- Migração D1: `npx wrangler d1 execute appmercado-db --remote --file=prisma/migrations/xxx/migration.sql`
-- Deploy falha se `database_id` no `wrangler.jsonc` não corresponder ao D1 real
+- Build local: `npm run build` (Turbopack para dev, webpack para produção)
+- Migração Turso: `turso db shell meu-db < prisma/migrations/xxx/migration.sql`
+- Dashboard é componente cliente (`DashboardClient.tsx`) — página estática, fetch de dados via server action
+- Quantidades em formato brasileiro via `toLocaleString('pt-BR')`
+- ERR_HTTP2_INADEQUATE_TRANSPORT ao rodar projeto local: ignorar, HTTP/2 local instável sem SSL
 <!-- END:project-memory -->

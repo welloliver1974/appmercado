@@ -19,7 +19,7 @@ export async function saveReceiptAction(data: {
 }) {
   const prisma = await getPrisma();
   const session = await auth();
-  if (!session?.user?.id) throw new Error("Não autorizado");
+  if (!session?.user?.id) return { error: true, message: "Não autorizado" };
 
   const userId = session.user.id;
 
@@ -95,6 +95,6 @@ export async function saveReceiptAction(data: {
     return { success: true };
   } catch (error) {
     console.error("Erro ao salvar nota:", error);
-    throw new Error("Falha ao salvar nota fiscal");
+    return { error: true, message: "Falha ao salvar nota fiscal" };
   }
 }

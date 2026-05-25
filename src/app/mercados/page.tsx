@@ -3,6 +3,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { Store, Receipt, Plus } from "lucide-react";
 import { AddMarketButton } from "./AddMarketButton";
+import { DeleteMarketButton } from "@/components/DeleteButtons";
 import Link from "next/link";
 
 export default async function MercadosPage() {
@@ -48,8 +49,11 @@ export default async function MercadosPage() {
               <div key={market.id} className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 space-y-4 hover:border-blue-500/30 transition-all">
                 <div className="flex items-start justify-between">
                   <h3 className="font-bold text-lg text-white">{market.name}</h3>
-                  <div className="p-2 bg-blue-500/10 rounded-lg">
-                    <Store className="h-5 w-5 text-blue-500" />
+                  <div className="flex items-center gap-2">
+                    <DeleteMarketButton id={market.id} />
+                    <div className="p-2 bg-blue-500/10 rounded-lg">
+                      <Store className="h-5 w-5 text-blue-500" />
+                    </div>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">

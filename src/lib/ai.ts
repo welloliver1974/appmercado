@@ -1,19 +1,19 @@
 import OpenAI from "openai";
 
-const provider = process.env.NEXT_PUBLIC_AI_PROVIDER || "openrouter";
+const provider = process.env.NEXT_PUBLIC_AI_PROVIDER || "groq";
 
 const config = {
   openrouter: {
     apiKey: process.env.OPENROUTER_API_KEY,
     baseURL: "https://openrouter.ai/api/v1",
-    model: "meta-llama/llama-3.2-11b-vision-instruct:free",
-    chatModel: "meta-llama/llama-3.1-70b-instruct:free",
+    model: "google/gemini-2.0-flash-exp:free",
+    chatModel: "meta-llama/llama-3.3-70b-instruct:free",
   },
   groq: {
     apiKey: process.env.GROQ_API_KEY,
     baseURL: "https://api.groq.com/openai/v1",
-    model: "llama-3.2-11b-vision-preview",
-    chatModel: "llama-3.1-8b-instant",
+    model: "meta-llama/llama-4-scout-17b-16e-instruct",
+    chatModel: "llama-3.3-70b-versatile",
   },
 };
 
@@ -45,7 +45,7 @@ export async function processReceiptImage(base64Image: string) {
           content: [
             {
               type: "text",
-              text: `Analise esta imagem de nota fiscal de supermercado e retorne APENAS um JSON no seguinte formato:
+              text: `Você é um OCR especializado em notas fiscais brasileiras. Analise a imagem COM MUITO CUIDADO e retorne APENAS um JSON no seguinte formato:
               {
                 "marketName": "Nome do Mercado",
                 "date": "YYYY-MM-DD",
@@ -54,7 +54,16 @@ export async function processReceiptImage(base64Image: string) {
                   { "name": "Nome do Produto", "quantity": 1, "unitPrice": 0.00, "totalPrice": 0.00, "unit": "un/kg/L" }
                 ]
               }
-              Se não conseguir identificar algum campo, deixe-o vazio ou como 0.`
+
+              REGRAS IMPORTANTES:
+              - Leia CADA número com atenção. Um desvio de 1kg pode representar 100% de erro.
+              - No Brasil a vírgula separa decimais: "1,735 kg" significa UM VÍRGULA SETECENTOS E TRINTA E CINCO kg (≈1.7 kg), não mil setecentos.
+              - Converta para ponto: 1,735 → 1.735
+              - "1 kg" significa 1.0, não 1000.
+              - Se o peso for "1.200 kg" no Brasil significa MIL E DUZENTOS kg. Só use isso se realmente houver 1200 kg.
+              - Confira se o número faz sentido: uma banana não pesa 2000 kg. Use o bom senso.
+              - Preços (unitPrice) e totais (totalPrice) seguem a mesma regra: R$ 1,99 → 1.99
+              - Se não conseguir identificar algum campo, deixe vazio ou como 0.`
             },
             {
               type: "image_url",
@@ -67,9 +76,10 @@ export async function processReceiptImage(base64Image: string) {
     });
 
     return JSON.parse(response.choices[0].message.content || "{}");
-  } catch (error) {
-    console.error("Erro ao processar imagem com IA:", error);
-    return { error: true, message: "Erro ao processar imagem. Verifique sua chave de API." };
+  } catch (error: any) {
+    const detail = error?.message || error?.status || "Erro desconhecido";
+    console.error("Erro ao processar imagem com IA:", detail);
+    return { error: true, message: `Erro na API de IA: ${detail}` };
   }
 }
 

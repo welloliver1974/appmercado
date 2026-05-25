@@ -1,388 +1,153 @@
-# FIXLOG - Controle de Despesas
+# FIXLOG — Migração Cloudflare D1 → Vercel + Turso
 
-Este log detalha todas as etapas de desenvolvimento, funcionalidades implementadas e a estrutura do projeto **Controle de Despesas**.
+## 2026-05-24
 
-## 🚀 Visão Geral
-O Controle de Despesas é um web app completo para gerenciamento de gastos, compras e despesas, focado em automação via IA, controle de estoque e análise financeira.
+### Problema Original
+App rodando no Cloudflare Workers (OpenNext) com 500 error — Turbopack gerava chunks SSR separados que não carregavam no ambiente single-script do workerd.
 
----
+### Tentativa 1: Inline Chunks (Cloudflare)
+Criado `scripts/inline-chunks.mjs` para ler os 81 chunks SSR e embuti-los no `handler.mjs` via `globalThis.__TURBOPACK_CHUNKS__`. Handler passou de 2.1 MiB → 3.58 MiB.
 
-## 🛠️ Tecnologias Utilizadas
-- **Framework**: Next.js 16 (App Router)
-- **Estilização**: Tailwind CSS (Tema Dark Premium: Preto e Azul)
-- **Banco de Dados**: SQLite com Prisma ORM v7
-- **Autenticação**: Auth.js v5 (next-auth) com Passkeys (WebAuthn/biometria)
-- **IA/Visão**: OpenRouter / Groq (Modelo Llama 3.2 Vision)
-- **Ícones**: Lucide React
+**Resultado:** Wrangler rejeitou o bundle — resolvedores esbuild não encontravam `@prisma/client-{hash}` e `@opentelemetry/api`. Adicionar aliases no `wrangler.jsonc` resolveu parte, mas Prisma exigia `edge.js` inexistente.
+
+**Decisão:** Abandonar Cloudflare/OpenNext.
 
 ---
 
-## ✨ Funcionalidades Implementadas
+### Migração para Vercel + Turso
 
-### 1. Dashboard Inteligente
-- Resumo de gastos mensais automáticos.
-- Indicadores de estoque crítico.
-- Atalhos rápidos para entrada de dados.
-- Feed de compras recentes com dados reais do banco.
+#### Arquivos Removidos
+- `wrangler.jsonc` — config Cloudflare
+- `open-next.config.ts` — config OpenNext
+- `scripts/inline-chunks.mjs` — workaround de chunks
+- `public/_headers` — headers Cloudflare
+- `.dev.vars` — env local Cloudflare
 
-### 2. Cadastro de Notas via IA
-- Upload de foto da nota fiscal.
-- Processamento via IA (Groq/OpenRouter) para extração automática de:
-  - Nome do Mercado
-  - Data da Compra
-  - Lista de Itens (Nome, Qtd, Preço Unitário, Preço Total)
-- Validação manual antes de salvar.
+#### Dependências Removidas
+- `@opennextjs/cloudflare` — runtime cloudflare
+- `wrangler` — CLI cloudflare
+- `@prisma/adapter-d1` — adapter D1 (desnecessário)
 
-### 3. Gestão de Estoque
-- Atualização automática de estoque ao salvar uma nota.
-- Controle manual de entrada e saída (+/-).
-- Alertas visuais para itens que estão acabando.
-- Exclusão de produtos e categorias.
+#### src/lib/prisma.ts (simplificado)
+- Removeu `getCloudflareContext()` e `PrismaD1`
+- Sempre usa `@prisma/adapter-libsql`
+- Prioridade: `TURSO_DATABASE_URL` > `DATABASE_URL` > `file:./dev.db`
+- `PrismaLibSql` recebe `{ url, authToken }` — cria client internamente
 
-### 4. Histórico de Compras (Minhas Notas)
-- Listagem organizada de todos os recibos salvos.
-- Detalhamento de valores totais e quantidade de itens por compra.
+#### next.config.ts
+- Removeu `import('@opennextjs/cloudflare').then(...)` — não precisa mais
 
-### 5. Análise de Preços Comparativa
-- Rastreamento histórico de preços por produto.
-- Identificação automática do "Melhor Mercado" para cada item.
-- Cálculo de preço médio e variação percentual entre estabelecimentos.
+#### src/app/page.tsx
+- Corrigido redirect: `redirect("/")` → `redirect("/login")` (estava em loop infinito)
 
-### 6. Lista de Compras Automática
-- Geração de lista baseada exclusivamente no que está em falta no estoque.
-- Cálculo de custo estimado total para a próxima ida ao mercado.
+#### src/app/login/page.tsx (criado)
+- Formulário de login real com email + senha
+- Antes: `redirect("/")` apenas (página vazia)
+- Agora: formulário estilizado com fetch → `window.location.href`
 
----
+#### src/app/api/login/route.ts
+- Mudou `NextResponse.redirect()` para `NextResponse.json({ success: true })`
+- Cookies ainda definidos na response
+- Evita problema de redirect seguido por fetch sem cookies
 
-## 📁 Estrutura de Arquivos Principal
+#### Banco de Dados (Turso)
+- Database: `appmercado-db` (Turso, região ap-northeast-1)
+- Migration inicial rodada via script `@libsql/client`
+- 11 tabelas + índices criados
 
-- `src/app/page.tsx`: Dashboard principal.
-- `src/app/nova-nota/page.tsx`: Interface de captura e IA.
-- `src/app/estoque/page.tsx`: Gerenciamento de estoque.
-- `src/app/notas/page.tsx`: Histórico de recibos.
-- `src/app/analise/page.tsx`: Comparador de preços.
-- `src/app/lista-compras/page.tsx`: Lista automática.
-- `src/app/config/page.tsx`: Configurações (editar nome).
-- `src/app/relatorios/page.tsx`: Exportar relatório CSV mensal.
-- `src/app/compartilhado/[token]/page.tsx`: Página pública de lista compartilhada.
-- `src/lib/ai.ts`: Configuração do motor de IA (OpenRouter/Groq).
-- `src/app/actions/`: Lógica de servidor para DB (Salvar notas, atualizar estoque, compartilhar).
-- `prisma/schema.prisma`: Modelagem do banco de dados.
+#### Vercel
+- Projeto linkado: `welloliver/appmercado`
+- Env vars configuradas na dashboard:
+  - `TURSO_DATABASE_URL`
+  - `TURSO_AUTH_TOKEN`
+  - `AUTH_PASSWORD`
+  - `AUTH_SECRET`
+  - `OPENROUTER_API_KEY`
+  - `GROQ_API_KEY`
+  - `NEXT_PUBLIC_AI_PROVIDER` (inicialmente `openrouter`, depois alterado para `groq`)
+- Deploy automático via GitHub (push na main)
+- URL: https://appmercado-chi.vercel.app
 
----
-
-## 🔧 Configuração Necessária
-Para o funcionamento da IA, as seguintes variáveis devem estar no arquivo `.env`:
-- `OPENROUTER_API_KEY` ou `GROQ_API_KEY`
-- `NEXT_PUBLIC_AI_PROVIDER` (definido como 'openrouter' ou 'groq')
-
----
----
-
-## 🐛 Correções de Bugs (22/05/2026)
-
-### 4. Login com senha não funcionava (Credentials + Server Action)
-- **Causa 1**: `@libsql/client` não aceita caminho relativo (`./dev.db`). O `prisma.ts` removia o prefixo `file:` com `replace("file:", "")`, gerando URL inválida.
-- **Causa 2**: Mesmo após conectar ao banco, as tabelas não existiam — necessário rodar `npx prisma db push`.
-- **Causa 3**: O `proxy.ts` usava `NextAuth().auth` que verificava sessão JWT do Auth.js. Como o server action setava cookies manuais (`user-id`, `user-email`), o middleware não reconhecia e redirecionava de volta ao `/login`.
-- **Causa 4**: O `auth()` do Auth.js era chamado nas páginas (ex: `page.tsx`) e retornava `null` por não encontrar sessão JWT, fazendo o dashboard renderizar vazio.
-- **Solução**:
-  - `src/lib/prisma.ts`: usar `resolve()` + prefixo `file:` para gerar URL absoluta (`file:C:\...\dev.db`).
-  - Rodar `npx prisma db push` para criar as tabelas.
-  - `src/proxy.ts`: reescrito para verificar cookie `user-id` diretamente, sem depender do Auth.js.
-  - `src/auth.ts`: `auth()` substituído por função que lê o cookie `user-id` e busca o usuário no banco.
-
-### 1. Login com biometria quebrado (Passkey + WebAuthn)
-- **Causa**: O `middleware.ts` criava instância separada do Auth.js **sem o PrismaAdapter**, mas o WebAuthn exige adapter → `MissingAdapter` error na inicialização.
-- **Causa 2**: O login usava `signIn` de `"next-auth/react"`, que não executa o fluxo WebAuthn (não ativa fingerprint/FaceID).
-- **Causa 3**: Prisma v7 mudou o engine padrão para `"client"`, que exige um driver adapter no `PrismaClient` — o `new PrismaClient()` simples parou de funcionar.
-- **Solução**:
-  - `src/proxy.ts`: Config separada sem provider Passkey (middleware não precisa de adapter).
-  - `src/app/login/page.tsx`: Import `signIn` trocado para `"next-auth/webauthn"`.
-  - `src/lib/prisma.ts`: Instalado `@prisma/adapter-libsql` + `@libsql/client` para adaptar o SQLite ao Prisma v7.
-
-### 2. Middleware renomeado para Proxy (Next.js 16)
-- O arquivo `middleware.ts` foi renomeado para `proxy.ts` conforme nova convenção do Next.js 16.
-
-### 3. Login sem biometria (Notebook)
-- **Problema**: Notebook não tem biometria, mas o login só oferecia "Entrar com Biometria".
-- **Solução**:
-  - Adicionado provider `Credentials` em `auth.config.ts` com senha compartilhada via `.env` (`AUTH_PASSWORD`).
-  - Tela de login agora tem abas "Digital" e "Senha" para alternar entre os métodos.
-  - Detecta suporte a WebAuthn (`window.PublicKeyCredential`) e exibe mensagem apropriada.
-  - Se o navegador não suportar biometria, a aba Digital ainda aparece mas com aviso para usar Senha.
+#### Build
+- `npm run build` → `next build` (Turbopack), sem OpenNext
+- Build local ~10s, Vercel ~25s com cache
+- Sem limite de 3 MiB, sem chunk inlining, sem workarounds
 
 ---
 
-## 🔐 Autenticação - Como Funciona
-- **Provider 1**: Passkey (WebAuthn) via `next-auth/providers/passkey` — para celular com biometria
-- **Provider 2**: Credentials (senha) manual via server action — fallback para notebook
-- **Biometria**: Auth.js gerencia o cerimonial completo — registro e login via fingerprint/FaceID
-- **Senha**: Senha compartilhada em `AUTH_PASSWORD` no `.env`. Server action valida e cria usuário no banco.
-- **Sessão**: Cookies manuais (`user-id`, `user-email`) definidos pelo server action, com 7 dias de validade.
-- **Middleware/Proxy**: Verifica cookie `user-id` diretamente, sem depender do Auth.js.
-- **Auth()**: Função customizada em `auth.ts` que lê o cookie e busca o usuário no banco.
-- **Login**: Tela em `/login` com abas para escolher entre Digital (biometria) e Senha (credenciais)
+### Correções Pós-Migração (ainda em 24/05)
+
+#### IA — Server Action (separada)
+- `processReceiptAction` criada em `src/app/actions/ai.ts`
+- Antes: `processReceiptImage` importado direto em componente client → `process.env.*` virava `undefined` no bundle cliente
+- Agora: server action chama `processReceiptImage` no servidor onde as envs existem
+
+#### IA — Modelos Descontinuados
+- Groq visão: `llama-3.2-11b-vision-preview` (decommissioned) → `meta-llama/llama-4-scout-17b-16e-instruct`
+- Groq chat: `llama-3.1-8b-instant` → `llama-3.3-70b-versatile`
+- OpenRouter visão: `meta-llama/llama-3.2-11b-vision-instruct:free` (404) → `google/gemini-2.0-flash-exp:free`
+- OpenRouter chat: `meta-llama/llama-3.1-70b-instruct:free` → `meta-llama/llama-3.3-70b-instruct:free`
+
+#### QR Code — Data Alucinada (2056 em vez de 2026)
+- **Causa:** `handleQRScan` usava `substring(1,3)` para ano e `substring(3,5)` para mês
+- **Correção:** `substring(2,4)` para ano, `substring(4,6)` para mês (AAMM começa no índice 2)
+- Formato: cUF(2) | AAMM(4) | CNPJ(14) | ...
+
+#### QR Code — Total R$ 0,00
+- **Causa:** Restrição `version===2 && tpEmis===9` impedia parse para QR com tpEmis diferente; alguns QR omitem field `cDest` deslocando total para field[3]
+- **Correção:** Sempre tenta fields[4] e [3], aceita qualquer valor positivo
+
+#### QR Code — Leitura com câmera
+- **Antes:** `getUserMedia` + vídeo stream contínuo (baixa resolução, jsQR não detectava)
+- **Depois:** `<input type="file" capture="environment">` (câmera nativa, resolução máxima)
+- `BarcodeDetector` API nativa (Chrome/Safari) com fallback `jsQR`
+- `createImageBitmap` para corrigir orientação EXIF (fotos de celular em pé)
+- Fallback de resolução reduzida para QR densos
+
+#### QR Code — SEFAZ fetch
+- Criado `fetchQRReceiptAction` em `src/app/actions/utils.ts`
+- Busca dados da nota direto da página NFCE via link do QR
+- Múltiplos padrões de regex para diferentes estados
+- Fallback para parse dos parâmetros do QR se falhar
+
+#### Page Crash ao Salvar no Mobile
+- **Sintoma:** "This page couldn't load" após clicar "Confirmar e Salvar" no celular
+- **Causa raiz:** `window.location.href = "/"` causava erro no navegador mobile
+- **Correção:** Removeu redirect automático. Agora mostra tela de sucesso com links "Ir para o Início" e "Ver Histórico"
+- **Complementar:** `saveReceiptAction` mudou de `throw new Error` para retornar `{ error, message }` — Next.js engole exceções de server actions
+
+#### Dashboard Crash no Mobile
+- **Sintoma:** "This page couldn't load" ao acessar a home `/` no celular
+- **Causa raiz:** Server component fazia múltiplas chamadas IA (`detectPriceAnomaly` para cada produto) que estouravam timeout de 10s da Vercel
+- **Correção:** Convertido para componente cliente (`DashboardClient.tsx`) com fetch assíncrono via `getDashboardData`. Loading spinner + estado de erro com retry. Página estática (○).
+
+#### Notas — Agora Clicáveis
+- `src/app/notas/page.tsx`: cada linha virou `<Link href={/notas/${id}}>`
+- `src/app/notas/[id]/page.tsx`: criada — mostra mercado, data, total, itens e botão excluir
+
+#### Botão Excluir
+- **Nota:** `src/components/DeleteButtons.tsx` — `DeleteReceiptButton` com confirmação, redireciona para `/notas`
+- **Mercado:** `DeleteMarketButton` — remove mercado + todas as notas vinculadas
+- **Produto (lista):** `DeleteListProductButton` — remove produto da lista de compras
+
+#### Prompt IA — Formato Decimal
+- Prompt reformulado com instruções explícitas:
+  - "1,735 kg significa UM VÍRGULA SETECENTOS kg (~1.7 kg), não mil setecentos"
+  - "Confira se o número faz sentido: uma banana não pesa 2000 kg"
+- Imagem comprimida em 1024px / quality 0.7 (melhor legibilidade que 800/0.6)
+
+#### Formato pt-BR
+- `src/lib/format.ts` criado com `formatQty()` e `formatCurrency()`
+- Todas as páginas agora exibem quantidades com vírgula decimal (1,735 kg) e moeda no formato brasileiro (R$ 6,99)
+- Usa `toLocaleString('pt-BR')` internamente
+
+#### Env Vars na Vercel
+- `NEXT_PUBLIC_AI_PROVIDER` alterado de `openrouter` para `groq` via CLI da Vercel
+- `.env` local atualizado para `NEXT_PUBLIC_AI_PROVIDER=groq`
 
 ---
 
-## ✨ Novas Funcionalidades (22/05/2026)
-
-### 7. Relatório Mensal CSV
-- Página `/relatorios` lista meses com compras registradas.
-- Botão "CSV" exporta relatório detalhado (mercado, data, produto, qtd, preços) + total gasto no mês.
-- Arquivo baixado com encoding UTF-8 (acentuação correta no Excel/Google Sheets).
-
-### 8. Notificações de Estoque Crítico
-- Componente `CriticalStockAlert` exibe banner no dashboard com itens em falta.
-- Envia notificação do navegador (API Notification) automaticamente se permitido.
-- Link direto pra página de estoque.
-
-### 9. Análise de Preços por Mercado (Multi-mercado)
-- Página `/analise` agora exibe tabela de preços por mercado para cada produto.
-- Destaque visual para o mercado com menor preço (tag "MELHOR").
-- Ordenação automática do mais barato ao mais caro.
-
-### 10. Compartilhar Lista de Compras
-- Botão "Compartilhar" na página `/lista-compras` gera link único com validade de 7 dias.
-- Link copiado automaticamente para a área de transferência.
-- Página pública `/compartilhado/[token]` exibe a lista sem login.
-- Modelo `SharedList` no banco com token único e expiração.
-
-### 11. Previsão de Gastos (Estatística)
-- Dashboard exibe previsão de gastos para o próximo mês baseada na média dos últimos 3 meses.
-- Indicador de tendência (alta/queda/estável) compara o último mês com o anterior.
-- Cálculo usa dados reais do banco, sem depender de API externa.
-
-### 12. Modo Offline (PWA)
-- `manifest.json` com ícones e configuração de app instalável.
-- Service Worker (`sw.js`) com cache de assets e fallback offline.
-- Metatags para suporte a iOS (apple-mobile-web-app) e Android.
-- Script de registro automático do service worker no layout.
-
----
-
-## 🐛 Correções Pós-Lançamento (22/05/2026)
-
-### Página /mercados
-- Criada página de listagem de mercados com total de notas e gastos.
-- Botão "Novo Mercado" com modal para cadastro manual (sem precisar de nota).
-
-### Página /config
-- Criada página de configurações com informações da conta e instruções PWA.
-- Formulário de alteração de nome: HTML nativo POST para `/api/update-name`.
-- API route lê cookie manualmente do header (sem depender de `auth()`).
-- Retorna redirect 302 para `/config` após atualizar.
-
-### Dashboard
-- Saudação dinâmica (Bom dia / Boa tarde / Boa noite).
-- Nome extraído do email automaticamente no cadastro.
-
-### Config
-- `next.config.ts`: adicionado `allowedDevOrigins` para IP 100.112.32.71 (rede local).
-- API route `/api/update-name` criada em path separado para evitar interceptação do Next.js.
-- Lê cookie `user-id` manualmente do header HTTP.
-
-### Leitor de QR Code da Nota (NFC-e/DANFE)
-- Componente `QRScanner` com câmera + `jsqr` para escanear QR.
-- Extrai chave de acesso (44 dígitos), CNPJ, data e total (modo contingência).
-- Preenche formulário automaticamente na página `/nova-nota`.
-
-### AI / Nova Nota
-- `ai.ts`: inicialização lazy do OpenAI client (não quebra sem API key).
-- Mensagem amigável quando API não configurada.
-- Botão de QR Code removido e reimplementado funcional.
-
----
-
----
-
-## 🐛 Correções e Melhorias (23/05/2026)
-
-### Finalizar Compras
-- Botão "FINALIZAR COMPRAS" em `/lista-compras` agora funcional.
-- `finalizarComprasAction` zera o estoque de itens com stock ≤ 1 para 5 unidades.
-
-### Busca/Filtro em Notas e Estoque
-- Componente `SearchInput` com `?q=` na URL para busca em tempo real.
-- `/notas`: busca por nome do mercado E por nome do produto dentro dos itens.
-- `/estoque`: busca por nome do produto.
-- `/notas?mercado=XXX`: filtro por mercado específico (link vindo de `/mercados`).
-
-### Login Digital (Passkey) corrigido
-- O `jwt` callback do NextAuth agora seta o cookie `user-id` após autenticação bem-sucedida.
-- O proxy/middleware reconhece o cookie e permite o acesso normalmente.
-- Aba "Digital" agora deve funcionar em dispositivos com biometria.
-
-### manifest.json corrigido
-- Ícones trocados de `.png` para `.svg` (arquivos existentes no `public/`).
-
-### Página /offline criada
-- Service worker não quebra mais tentando cachear rota inexistente.
-
-### Ícone de notificação corrigido
-- `CriticalStockAlert` agora usa `/icon-192.svg` em vez de `/icon.png` (inexistente).
-
-### Migration regenerada
-- `prisma/migrations/` recriada do zero, 100% consistente com `schema.prisma`.
-- Novo setup: `npx prisma migrate dev` funciona direto (sem precisar de `db push`).
-
-### Botão Sair corrigido
-- `signOut` do `next-auth/react` só limpava cookie do NextAuth, não os cookies manuais.
-- Criado `logoutAction` server action que deleta `user-id` e `user-email` e redireciona para `/login`.
-- Sidebar agora usa form com server action em vez de `signOut()`.
-
----
-
-## ✨ Novas Funcionalidades com IA (23/05/2026)
-
-### Categorização Automática de Produtos
-- `ai.ts`: nova função `categorizeProduct()` que identifica a categoria de um produto pelo nome.
-- Ao salvar uma nota, cada produto recebe categoria automática (Hortifrúti, Laticínios, Carnes, etc.).
-- Cria categorias novas no banco conforme necessário.
-- Fallback para "Geral" se IA não configurada.
-
-### Assistente IA (Chat)
-- Nova página `/assistente` com interface de chat.
-- API route `/api/assistente` que busca dados reais do usuário (gastos, estoque, compras recentes) e envia para IA.
-- Perguntas em linguagem natural: "quanto gastei esse mês?", "qual mercado mais barato?".
-- Fallback amigável se IA não configurada.
-
-### Previsão Inteligente de Gastos
-- Dashboard agora usa IA (`analyzeSpendingTrend`) para analisar tendência dos últimos meses.
-- Se IA não configurada, usa média simples (fallback).
-- Card mostra insight textual explicando a tendência.
-
-### Detecção de Preço Anormal
-- Dashboard analisa produtos com histórico de preços.
-- IA (`detectPriceAnomaly`) identifica variações acima de 15% da média.
-- Card "Preços Anormais" exibe alertas no dashboard.
-- Fallback silencioso se IA não configurada.
-
-### Busca de Preços Online (DuckDuckGo HTML Search)
-- Novo botão "Preço online" em cada produto na página `/analise`.
-- `priceSearch.ts` consulta DuckDuckGo HTML search (gratuito, sem API key).
-- Filtro de domínios: só exibe resultados de e-commerces brasileiros conhecidos (MercadoLivre, Carrefour, Amazon, Shopee, Magalu, etc.).
-- API route `/api/pesquisar-preco` faz a busca no servidor.
-- Componente `PriceSearchButton` exibe resultados (loja + preço) com link externo.
-- Substituiu Google Custom Search API (não aceita mais novos cadastros) e Brave Search API (exige cartão de crédito).
-
----
-
-## 🐛 Correções e Melhorias (23/05/2026 — tarde)
-
-### Compressão de imagem no upload de nota
-- `handleFileChange` em `/nova-nota` agora comprime a foto via Canvas API antes de enviar pra IA.
-- Redimensiona pra max 1024px de largura, qualidade JPEG 0.7.
-- Reduz drasticamente tokens gastos em chamadas de visão (foto de 8MB → ~100-200KB).
-
----
-
-## 🔧 Grande Refatoração de Segurança e Estabilidade (23/05/2026 — noite)
-
-### Segurança
-- `updateStockAction` e `deleteProductAction` agora verificam `auth()` e scopo por `userId`.
-- `proxy.ts` renomeado para `middleware.ts` (reativa proteção global de rotas — estava morto).
-- `POST /api/pesquisar-preco` agora exige autenticação.
-- Stock actions mudaram de parâmetros diretos para `FormData` (escondem IDs via `<input type="hidden">`).
-
-### Estabilidade
-- `analise/page.tsx`: `.filter().map()` reorganizado — filtra produtos sem itens ANTES de calcular `Math.min()`, evitando `NaN`/`Infinity`.
-- `estoque/page.tsx` + `lista-compras/page.tsx`: `product.category?.name ?? "Sem categoria"` — não quebra mais se a relação estiver nula.
-- `compartilhado/[token]/page.tsx`: `JSON.parse()` dentro de try/catch — se o JSON estiver corrompido, chama `notFound()` em vez de crashar.
-- `analise/page.tsx`: `bestMarket ?? "---"` — não renderiza "undefined" na tela.
-
-### UX
-- Todas as páginas que retornavam `return null` (Dashboard, Notas, Estoque, Lista, Análise) agora fazem `redirect("/login")`.
-- `FinalizarComprasButton` e `AddMarketButton`: `router.refresh()` em vez de `window.location.reload()` (sem flash, sem perder estado React).
-- Login: email mantido via `useState` — não some mais ao trocar entre abas Digital/Senha.
-- Server actions do estoque movidas de closures inline para forms com `<input type="hidden">`.
-
-### Limpeza
-- Dependências removidas do `package.json`: `@google/generative-ai`, `better-sqlite3`, `clsx`, `date-fns`, `tailwind-merge`.
-- `prisma` movido para `devDependencies`.
-- Ícones não usados removidos: `Store` (notas), `Package` (lista-compras), `ArrowUp`/`Store` (analise — só os que não eram usados foram removidos).
-
----
-
-## 🔧 Últimas Correções (23/05/2026 — noite)
-
-### Segurança
-- `ai.ts`: removido `dangerouslyAllowBrowser: true` — API key não vaza mais pro bundle do navegador.
-
-### Estabilidade
-- `finalizarComprasAction` agora retorna `{ error }` em vez de `throw new Error()` — não quebra a UI se der falha.
-- `SearchInput.tsx`: separado em `SearchInputInner` + `Suspense` wrapper — evita Warning do `useSearchParams()` no SSR.
-
-### Limpeza
-- `auth.config.ts`: removido callback `authorized` morto (nunca era executado sem middleware do NextAuth).
-- `auth.ts`: removido spread de `authConfig.callbacks` que não existia mais.
-- `proxy.ts` restaurado: Next.js 16 requer `proxy.ts`, não `middleware.ts`.
-- `share.ts`: adicionado tipo explícito `LowStockItem` pro parâmetro do `.map()`.
-
-*Log atualizado em 23/05/2026*
-
----
-
-## 🚀 Deploy Cloudflare — Crônica de uma Madrugada (23/05/2026)
-
-### O Desafio
-Fazer o deploy do app no Cloudflare Workers (free tier, limite 3 MiB) com Next.js 16, OpenNext e Prisma v7.
-
-### Problema 1: postinstall sem prisma generate
-- Cloudflare faz `npm clean-install`, não roda `prisma generate`.
-- `@prisma/client` sem tipos → build quebra com `Module '"@prisma/client"' has no exported member 'PrismaClient'`.
-- **Solução**: `"postinstall": "prisma generate"` no package.json.
-
-### Problema 2: DATABASE_URL durante o build
-- `prisma.ts` executava `process.env.DATABASE_URL!.replace(...)` no escopo do módulo.
-- Durante `next build` no Cloudflare, `DATABASE_URL` não está definida → `.replace()` em `undefined`.
-- **Solução**: Prisma client virou um **Proxy** — lazy initialization, só cria na primeira chamada.
-
-### Problema 3: proxy.ts roda Node.js, Cloudflare rejeita
-- Next.js 16: `proxy.ts` sempre roda em Node.js. Cloudflare Workers não suporta.
-- OpenNext: `ERROR Node.js middleware is not currently supported. Consider switching to Edge Middleware.`
-- **Solução**: Trocar `proxy.ts` → `middleware.ts` (depreciado, mas roda Edge runtime).
-- O erro `export const runtime = "edge"` não funciona em proxy.ts, mas middleware.ts já usa Edge por padrão.
-
-### Problema 4: Worker excede 3 MiB
-- `handler.mjs` com 14 MB uncompressed → 3.7 MiB gzip (limite: 3 MiB).
-- Culpados: `next-auth`, `@simplewebauthn`, `@libsql/client` (better-sqlite3 nativo).
-- **Solução**: Remover `next-auth`, `@auth/prisma-adapter`, `@simplewebauthn/browser`, `@simplewebauthn/server`.
-- Login simplificado para apenas senha (server action manual).
-- `auth.ts` reescrito — só a função customizada, sem NextAuth.
-- Worker final: ~700 KiB gzip.
-
-### Problema 5: Build script entra em loop infinito
-- `npm run deploy` → `opennextjs-cloudflare build` → `npm run build` → `next build && opennextjs-cloudflare build` → loop.
-- `opennextjs-cloudflare build` já chama `npm run build` internamente.
-- **Solução**: `"build": "next build"` (sem `&& opennextjs-cloudflare build`).
-
-### Problema 6: SQLite local não funciona no Cloudflare
-- `file:./dev.db` é arquivo local. Cloudflare Workers não tem filesystem persistente.
-- `@libsql/client` depende de `better-sqlite3` (binding nativo, não roda no Workers).
-- **Solução**: Migrar para **Cloudflare D1** (SQLite gerenciado, gratuito, nativo).
-- Instalar `@prisma/adapter-d1@7.9.0-dev.6`.
-- `getCloudflareContext().env.appmercado_db` — OpenNext expõe bindings via `getCloudflareContext()`.
-- `prisma.ts`: se `DATABASE_URL` existir → libsql (local), senão → D1 (Cloudflare).
-- Criar D1: `npx wrangler d1 create appmercado-db`.
-- Migrar schema: `npx wrangler d1 execute appmercado-db --remote --file=prisma/migrations/xxx/migration.sql`.
-- Binding: `appmercado_db`.
-
-### Resultado Final
-- URL: https://appmercado.welloliver.workers.dev
-- Worker: 702 KiB gzip
-- Startup: 28 ms
-- D1 Database conectado
-- IA funcionando (OpenRouter)
-- Secrets: AUTH_PASSWORD, AUTH_SECRET, OPENROUTER_API_KEY, GROQ_API_KEY
-
-### Arquivos Criados/Modificados
-- `src/middleware.ts` — Edge middleware (substitui proxy.ts)
-- `src/lib/prisma.ts` — Prisma client lazy via Proxy, suporte D1 + libsql
-- `src/auth.ts` — função customizada sem NextAuth
-- `wrangler.jsonc` — config Cloudflare com D1 binding
-- `open-next.config.ts` — config OpenNext Cloudflare
-- `public/_headers` — cache headers para assets
-- `.dev.vars` — vars de desenvolvimento
-- `package.json` — scripts build/deploy, dependências limpas
+### Issues Abertas
+- [ ] Testar fluxo completo no celular (foto → IA → salvar → ver nota)
+- [ ] Validar extração SEFAZ para diferentes estados
+- [ ] Verificar precisão do modelo Groq para leitura de notas fiscais brasileiras

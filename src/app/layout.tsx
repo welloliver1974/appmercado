@@ -18,7 +18,10 @@ export const metadata: Metadata = {
   description: "Controle de Despesas - Gerencie seus gastos de forma inteligente",
 };
 
+export const runtime = "nodejs";
+
 export default function RootLayout({
+
   children,
 }: Readonly<{
   children: React.ReactNode;
@@ -44,9 +47,9 @@ export default function RootLayout({
             `,
           }}
         />
-        <div className="flex min-h-screen">
+        <div className="flex min-h-dvh">
           <Sidebar />
-          <main className="flex-1 overflow-y-auto">
+          <main className="flex-1 min-w-0 pb-20 md:pb-0">
             {children}
           </main>
         </div>

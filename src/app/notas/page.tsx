@@ -1,3 +1,4 @@
+import { formatCurrency } from "@/lib/format";
 import { getPrisma } from "@/lib/prisma";
 import { 
   History, 
@@ -70,7 +71,7 @@ export default async function NotasPage(props: { searchParams?: Promise<{ q?: st
           </div>
         ) : (
           filtered.map((receipt: any) => (
-            <div key={receipt.id} className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6 flex items-center justify-between group hover:border-blue-500/30 transition-all">
+            <Link key={receipt.id} href={`/notas/${receipt.id}`} className="block bg-zinc-900 rounded-2xl border border-zinc-800 p-6 flex items-center justify-between group hover:border-blue-500/30 transition-all">
               <div className="flex items-center gap-4">
                 <div className="h-12 w-12 rounded-xl bg-zinc-800 flex items-center justify-center text-zinc-400 font-bold text-sm group-hover:bg-blue-600 group-hover:text-white transition-all">
                   {receipt.market.name[0]}
@@ -89,11 +90,11 @@ export default async function NotasPage(props: { searchParams?: Promise<{ q?: st
               <div className="text-right flex items-center gap-4">
                 <div>
                   <p className="text-xs text-zinc-500 uppercase font-bold tracking-wider">Total</p>
-                  <p className="text-xl font-bold text-white">R$ {receipt.totalAmount.toFixed(2)}</p>
+                  <p className="text-xl font-bold text-white">{formatCurrency(receipt.totalAmount)}</p>
                 </div>
                 <ChevronRight className="h-5 w-5 text-zinc-600 group-hover:text-blue-500 transition-colors" />
               </div>
-            </div>
+            </Link>
           ))
         )}
       </div>

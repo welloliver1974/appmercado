@@ -1,3 +1,4 @@
+import { formatQty, formatCurrency } from "@/lib/format";
 import { getPrisma } from "@/lib/prisma";
 import { 
   ShoppingCart, 
@@ -10,6 +11,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { ShareListButton } from "@/components/ShareListButton";
 import { FinalizarComprasButton } from "@/components/FinalizarComprasButton";
+import { DeleteListProductButton } from "@/components/DeleteListProductButton";
 
 export default async function ListaComprasPage() {
   const prisma = await getPrisma();
@@ -77,11 +79,14 @@ export default async function ListaComprasPage() {
                 <div className="flex items-center gap-6">
                   <div className="text-right">
                     <p className="text-xs text-zinc-500 uppercase font-bold">Estoque</p>
-                    <p className="text-sm font-bold text-amber-500">{product.stock} {product.unit}</p>
+                    <p className="text-sm font-bold text-amber-500">{formatQty(product.stock)} {product.unit}</p>
                   </div>
-                  <button className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-500 hover:text-white">
-                    <Plus className="h-5 w-5" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-500 hover:text-white">
+                      <Plus className="h-5 w-5" />
+                    </button>
+                    <DeleteListProductButton id={product.id} />
+                  </div>
                 </div>
               </div>
             ))
@@ -104,7 +109,7 @@ export default async function ListaComprasPage() {
               <div className="pt-4 border-t border-zinc-800 flex justify-between items-end">
                 <span className="text-zinc-500 text-sm">Custo Estimado:</span>
                 <div className="text-right">
-                  <p className="text-2xl font-black text-blue-500">R$ {totalEstimated.toFixed(2)}</p>
+                  <p className="text-2xl font-black text-blue-500">{formatCurrency(totalEstimated)}</p>
                   <p className="text-[10px] text-zinc-600 uppercase font-bold">Baseado em preços médios</p>
                 </div>
               </div>

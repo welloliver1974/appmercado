@@ -1,15 +1,15 @@
 "use client";
 
+import { formatQty, formatCurrency } from "@/lib/format";
 import { useState } from "react";
-import { Camera, ArrowLeft, Loader2, Save, Trash2, CheckCircle2, QrCode } from "lucide-react";
+import { Camera, ArrowLeft, Loader2, Save, Trash2, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { processReceiptImage } from "@/lib/ai";
 import { saveReceiptAction } from "@/app/actions/receipts";
+import { processReceiptAction } from "@/app/actions/ai";
+import { fetchQRReceiptAction } from "@/app/actions/utils";
 import { QRScanner } from "@/components/QRScanner";
 
 export default function NovaNota() {
-  const router = useRouter();
   const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -53,7 +53,7 @@ export default function NovaNota() {
     setLoading(true);
     try {
       const base64 = image.split(",")[1];
-      const data = await processReceiptImage(base64);
+      const data = await processReceiptAction(base64);
       if (data?.error) {
         alert(data.message || "Erro ao processar imagem. API não configurada.");
       } else {
@@ -67,42 +67,45 @@ export default function NovaNota() {
     }
   };
 
-  const handleQRScan = (qr: { accessKey: string; totalAmount?: number; rawUrl: string }) => {
-    const month = parseInt(qr.accessKey.substring(3, 5), 10) - 1;
-    const year = 2000 + parseInt(qr.accessKey.substring(1, 3), 10);
-    const date = new Date(year, Math.max(0, month), 1).toISOString().split("T")[0];
-    const cnpj = qr.accessKey.substring(6, 20);
-
-    setReceiptData({
-      marketName: `Mercado CNPJ ${cnpj}`,
-      date,
-      totalAmount: qr.totalAmount || 0,
-      items: [],
-      qrCode: qr.rawUrl,
-    });
+  const handleQRScan = async (qr: { accessKey: string; totalAmount?: number; rawUrl: string }) => {
+    setLoading(true);
+    // Tenta buscar dados direto da SEFAZ
+    const result = await fetchQRReceiptAction(qr.rawUrl);
+    if (result?.error || !result?.marketName) {
+      // Fallback: usa dados do QR
+      const year = 2000 + parseInt(qr.accessKey.substring(2, 4), 10);
+      const month = parseInt(qr.accessKey.substring(4, 6), 10) - 1;
+      const date = new Date(year, Math.max(0, month), 1).toISOString().split("T")[0];
+      const cnpj = qr.accessKey.substring(6, 20);
+      setReceiptData({
+        marketName: result?.marketName || `Mercado CNPJ ${cnpj}`,
+        date,
+        totalAmount: qr.totalAmount || 0,
+        items: [],
+        qrCode: qr.rawUrl,
+      });
+    } else {
+      setReceiptData(result);
+    }
+    setLoading(false);
   };
 
   const handleSave = async () => {
     if (!receiptData) return;
     setSaving(true);
-    try {
-      await saveReceiptAction(receiptData);
+    const result = await saveReceiptAction(receiptData);
+    setSaving(false);
+    if (result?.error) {
+      alert(result.message || "Erro ao salvar a nota.");
+    } else {
       setSuccess(true);
-      setTimeout(() => {
-        router.push("/");
-      }, 2000);
-    } catch (error) {
-      console.error(error);
-      alert("Erro ao salvar a nota no banco de dados.");
-    } finally {
-      setSaving(false);
     }
   };
 
   if (success) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-8">
-        <div className="bg-zinc-900 p-12 rounded-3xl border border-zinc-800 flex flex-col items-center text-center space-y-6 animate-in zoom-in-95 duration-300">
+        <div className="bg-zinc-900 p-12 rounded-3xl border border-zinc-800 flex flex-col items-center text-center space-y-6">
           <div className="h-20 w-20 bg-emerald-500/20 rounded-full flex items-center justify-center">
             <CheckCircle2 className="h-12 w-12 text-emerald-500" />
           </div>
@@ -110,7 +113,14 @@ export default function NovaNota() {
             <h2 className="text-3xl font-bold">Nota Salva!</h2>
             <p className="text-zinc-400">O estoque e os gastos mensais foram atualizados.</p>
           </div>
-          <p className="text-zinc-600 text-sm italic">Redirecionando para o dashboard...</p>
+          <div className="flex gap-3 pt-4">
+            <Link href="/" className="px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-bold transition-all">
+              Ir para o Início
+            </Link>
+            <Link href="/notas" className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all">
+              Ver Histórico
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -188,7 +198,7 @@ export default function NovaNota() {
                   </div>
                   <div className="text-right flex-1">
                     <label className="text-xs text-zinc-500 font-bold uppercase">Total</label>
-                    <p className="text-xl font-bold text-emerald-400 mt-1">R$ {receiptData.totalAmount?.toFixed(2)}</p>
+                    <p className="text-xl font-bold text-emerald-400 mt-1">{formatCurrency(receiptData.totalAmount)}</p>
                   </div>
                 </div>
 
@@ -199,9 +209,9 @@ export default function NovaNota() {
                       <div key={idx} className="flex items-center justify-between p-2 rounded bg-black border border-zinc-800 text-sm">
                         <div className="flex-1">
                           <p className="font-bold truncate">{item.name}</p>
-                          <p className="text-xs text-zinc-500">{item.quantity} {item.unit} x R$ {item.unitPrice?.toFixed(2)}</p>
+                          <p className="text-xs text-zinc-500">{formatQty(item.quantity)} {item.unit} x {formatCurrency(item.unitPrice)}</p>
                         </div>
-                        <p className="font-bold">R$ {item.totalPrice?.toFixed(2)}</p>
+                        <p className="font-bold">{formatCurrency(item.totalPrice)}</p>
                       </div>
                     ))}
                   </div>

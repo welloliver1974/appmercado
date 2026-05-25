@@ -24,8 +24,7 @@ export async function POST(req: NextRequest) {
       const name = email.split('@')[0];
       user = await prisma.user.create({ data: { email, name } });
     }
-    // set cookies
-    const response = NextResponse.redirect(new URL('/', req.url));
+    const response = NextResponse.json({ success: true });
     response.cookies.set('user-id', user.id, { path: '/', httpOnly: true, maxAge: 60 * 60 * 24 * 7 });
     response.cookies.set('user-email', user.email ?? '', { path: '/', httpOnly: true, maxAge: 60 * 60 * 24 * 7 });
     return response;

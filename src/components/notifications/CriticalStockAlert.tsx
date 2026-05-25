@@ -1,5 +1,6 @@
 "use client";
 
+import { formatQty } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { AlertTriangle, X, Package } from "lucide-react";
 import Link from "next/link";
@@ -46,7 +47,7 @@ export function CriticalStockAlert({ items }: { items: CriticalItem[] }) {
           {items.slice(0, 5).map((item: any) => (
             <span key={item.id} className="text-xs text-zinc-400 bg-zinc-800 px-2 py-1 rounded-md flex items-center gap-1">
               <Package className="h-3 w-3" />
-              {item.name} ({item.stock} {item.unit})
+              {item.name} ({formatQty(item.stock)} {item.unit})
             </span>
           ))}
           {items.length > 5 && (
