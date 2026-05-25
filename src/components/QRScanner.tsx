@@ -1,21 +1,20 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { Camera, Link } from "lucide-react";
+import { Camera, Link, RefreshCw } from "lucide-react";
 
-interface QRResult {
+export interface QRResult {
   accessKey: string;
   totalAmount?: number;
   rawUrl: string;
 }
 
-function parseQRData(url: string): QRResult | null {
+export function parseQRData(url: string): QRResult | null {
   try {
     const parsed = new URL(url);
     let accessKey = "";
     let totalAmount: number | undefined;
 
-    // Tenta parâmetro p (formato NFC-e padrão: chave|versão|tpEmis|cDest|total|...)
     const p = parsed.searchParams.get("p");
     if (p) {
       const fields = decodeURIComponent(p).split("|");
@@ -35,7 +34,6 @@ function parseQRData(url: string): QRResult | null {
       }
     }
 
-    // Fallback: tenta chaveNFe direto (SP e outros estados)
     if (!accessKey) {
       const chave = parsed.searchParams.get("chaveNFe");
       if (chave) {
@@ -53,7 +51,6 @@ function parseQRData(url: string): QRResult | null {
 }
 
 async function decodeQR(img: HTMLImageElement): Promise<string | null> {
-  // 1. Tenta BarcodeDetector nativo (Chrome Android, Safari)
   if ("BarcodeDetector" in window) {
     try {
       const bitmap = await createImageBitmap(img);
@@ -66,15 +63,12 @@ async function decodeQR(img: HTMLImageElement): Promise<string | null> {
     } catch { /* fallback */ }
   }
 
-  // 2. Fallback: jsQR com createImageBitmap (respeita EXIF)
   try {
     const { default: jsQR } = await import("jsqr");
     const bitmap = await createImageBitmap(img);
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
 
-    // Tenta com resolução reduzida primeiro (1200px máx)
-    // QR denso é mais legível em resolução moderada, e evita crash em imagem 4000x3000
     for (const maxDim of [1200, 800, 1600]) {
       const scale = Math.min(maxDim / bitmap.width, maxDim / bitmap.height, 1);
       const sw = Math.round(bitmap.width * scale);
@@ -96,35 +90,57 @@ async function decodeQR(img: HTMLImageElement): Promise<string | null> {
 export function QRScanner({ onScan }: { onScan: (data: QRResult) => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [scanning, setScanning] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [status, setStatus] = useState<"idle" | "processing" | "failed" | "done">("idle");
   const [manualUrl, setManualUrl] = useState("");
   const [showManual, setShowManual] = useState(false);
+
+  async function processImage(file: File) {
+    setStatus("processing");
+
+    const dataUrl = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    });
+    setPreview(dataUrl);
+
+    const img = new Image();
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = dataUrl;
+    });
+
+    try {
+      const raw = await decodeQR(img);
+      if (raw) {
+        const result = parseQRData(raw);
+        if (result) {
+          setStatus("done");
+          onScan(result);
+          return;
+        }
+      }
+      setStatus("failed");
+    } catch {
+      setStatus("failed");
+    }
+  }
 
   async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setScanning(true);
-
-    const img = new Image();
-    img.onload = async () => {
-      try {
-        const raw = await decodeQR(img);
-        if (raw) {
-          const result = parseQRData(raw);
-          if (result) {
-            onScan(result);
-            setScanning(false);
-            return;
-          }
-        }
-        alert("QR Code não encontrado. Enquadre bem o código e tire outra foto.");
-      } catch {
-        alert("Erro ao processar imagem.");
-      }
-      setScanning(false);
-    };
-    img.onerror = () => { alert("Erro ao carregar imagem."); setScanning(false); };
-    img.src = URL.createObjectURL(file);
+    await processImage(file);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function handleRetake() {
+    setPreview(null);
+    setStatus("idle");
+    setScanning(false);
+    fileInputRef.current?.click();
   }
 
   function handleManualSubmit() {
@@ -136,6 +152,47 @@ export function QRScanner({ onScan }: { onScan: (data: QRResult) => void }) {
     } else {
       alert("URL inválida. Cole o link completo do QR Code.");
     }
+  }
+
+  // Se tem preview e está em estado final, mostra resultado
+  if (preview && (status === "failed" || status === "done")) {
+    return (
+      <div className="space-y-3">
+        <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden border border-zinc-700">
+          <img src={preview} alt="QR capturado" className="object-cover w-full h-full" />
+          {status === "failed" && (
+            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+              <div className="text-center p-4">
+                <p className="text-sm font-bold text-red-400 mb-1">QR Code não encontrado</p>
+                <p className="text-[10px] text-zinc-400">Enquadre bem o código e evite reflexos</p>
+              </div>
+            </div>
+          )}
+          {status === "done" && (
+            <div className="absolute top-2 right-2 bg-emerald-500/80 text-white text-[10px] font-bold px-2 py-0.5 rounded">
+              OK
+            </div>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={handleRetake}
+            className="flex-1 flex items-center justify-center gap-2 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl text-xs font-bold transition-all"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Tentar novamente
+          </button>
+        </div>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFile}
+          className="hidden"
+        />
+      </div>
+    );
   }
 
   return (
