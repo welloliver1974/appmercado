@@ -75,10 +75,20 @@ function extractDomain(url: string): string {
 }
 
 function getStoreName(domain: string): string | null {
+  if (!domain) return null;
+  // Skip non-commercial domains
+  const skipTLDs = [".gov", ".gov.br", ".edu", ".edu.br"];
+  for (const tld of skipTLDs) { if (domain.endsWith(tld)) return null; }
+  // Skip .org / .org.br (ONGs, entidades)
+  if (domain.endsWith(".org") || domain.endsWith(".org.br")) return null;
+  // Check known store domains first (return friendly name)
   for (const d of STORE_DOMAINS) {
     if (domain === d || domain.endsWith("." + d)) return d.split(".")[0];
   }
-  return null;
+  // Fallback: use first meaningful part of domain as store name
+  const parts = domain.split(".");
+  if (parts[0] === "www") parts.shift();
+  return parts[0] || domain;
 }
 
 function extractPrice(title: string, snippet: string): string | null {
