@@ -23,7 +23,7 @@ export async function getDashboardData() {
         _sum: { totalAmount: true },
         where: { userId, date: { gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1) } }
       }),
-      prisma.product.aggregate({ _sum: { stock: true }, where: { userId } }),
+      prisma.product.count({ where: { userId, items: { some: {} } } }),
       prisma.receipt.groupBy({
         by: ["date"], _sum: { totalAmount: true }, where: { userId }, orderBy: { date: "desc" },
       }),
@@ -65,7 +65,7 @@ export async function getDashboardData() {
       recentReceipts: JSON.parse(JSON.stringify(recentReceipts)),
       criticalProducts: JSON.parse(JSON.stringify(criticalProducts)),
       spentMonth: totalSpentMonth._sum.totalAmount || 0,
-      stockCount: Math.round((totalStockItems._sum.stock || 0) * 1000) / 1000,
+      stockCount: totalStockItems,
       prediction,
       insight,
       trend,

@@ -1,4 +1,4 @@
-import { formatQty, formatCurrency } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 import { getPrisma } from "@/lib/prisma";
 import { 
   ShoppingCart, 
@@ -76,17 +76,12 @@ export default async function ListaComprasPage() {
                     <p className="text-xs text-zinc-500 font-medium uppercase tracking-widest">{product.category?.name ?? "Sem categoria"}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-6">
-                  <div className="text-right">
-                    <p className="text-xs text-zinc-500 uppercase font-bold">Estoque</p>
-                    <p className="text-sm font-bold text-amber-500">{formatQty(product.stock)} {product.unit}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-500 hover:text-white">
-                      <Plus className="h-5 w-5" />
-                    </button>
-                    <DeleteListProductButton id={product.id} />
-                  </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-zinc-500 bg-zinc-800 px-2 py-1 rounded uppercase font-bold tracking-wider">Faltando</span>
+                  <button className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-500 hover:text-white">
+                    <Plus className="h-5 w-5" />
+                  </button>
+                  <DeleteListProductButton id={product.id} />
                 </div>
               </div>
             ))

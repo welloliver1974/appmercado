@@ -1,6 +1,6 @@
 "use client";
 
-import { formatQty, formatCurrency } from "@/lib/format";
+import { formatCurrency } from "@/lib/format";
 import { useEffect, useState } from "react";
 import { ShoppingCart, Package, TrendingUp, PlusCircle, QrCode, Camera, ArrowUpRight, ArrowDownRight, Calendar, Sparkles, MoreVertical, Loader2 } from "lucide-react";
 import Link from "next/link";
@@ -147,7 +147,7 @@ export default function DashboardClient() {
                 <p className="text-zinc-500 text-sm italic">Nenhum item crítico.</p>
               ) : (
                 data.criticalProducts.map((product: any) => (
-                  <CriticalItem key={product.id} name={product.name} stock={`${formatQty(product.stock)} ${product.unit}`} progress={Math.min(product.stock * 20, 100)} color="bg-amber-500" />
+                  <CriticalItem key={product.id} name={product.name} color="bg-amber-500" />
                 ))
               )}
             </div>
@@ -208,15 +208,14 @@ function RecentReceiptItem({ market, date, amount, items }: any) {
   );
 }
 
-function CriticalItem({ name, stock, progress, color }: any) {
+function CriticalItem({ name, color }: any) {
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-sm">
         <span className="font-medium text-zinc-300">{name}</span>
-        <span className="text-zinc-500 text-xs">{stock}</span>
       </div>
       <div className="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
-        <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${progress}%` }} />
+        <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: '0%' }} />
       </div>
     </div>
   );
