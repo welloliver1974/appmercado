@@ -111,15 +111,80 @@ export async function fetchQRReceiptAction(qrUrl: string) {
       return { error: true, message: "Página com CAPTCHA ou não encontrada." };
     }
 
-    const marketName = parseMarketName(html);
-    const dateMatch = html.match(/(\d{2}\/\d{2}\/\d{4})/);
-    const date = dateMatch
-      ? new Date(dateMatch[1].split("/").reverse().join("-")).toISOString().split("T")[0]
-      : "";
-    const total = parseTotal(html);
-    const items = parseItems(html);
+    let marketName = "";
+    let date = "";
+    let total = 0;
+    let items: { name: string; quantity: number; unit: string; unitPrice: number }[] = [];
 
-    // Se não achou nada útil, retorna erro pra usar fallback do accessKey
+    // Detecta se é o layout padrão SP/RJ (version 4.00, XSLT 2.05)
+    const isSefazSP = html.includes("txtTopo") || html.includes("tabResult") || html.includes("Consulta Resumida");
+
+    if (isSefazSP) {
+      // 1. Nome do estabelecimento
+      const marketMatch = html.match(/<[^>]*class="txtTopo"[^>]*>([^<]+)<\/[^>]+>/i);
+      if (marketMatch) {
+        marketName = marketMatch[1].trim();
+      }
+
+      // 2. Data de emissão (ex: Emissão: 19/05/2026)
+      const dateMatch = html.match(/Emissão:\s*<\/strong>\s*(\d{2})\/(\d{2})\/(\d{4})/i) || html.match(/(\d{2})\/(\d{2})\/(\d{4})/);
+      if (dateMatch) {
+        date = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
+      }
+
+      // 3. Valor total / Valor a pagar
+      const payMatch = html.match(/Valor\s+a\s+pagar[^]*?class="totalNumb[^"]*"[^>]*>([\d.,]+)/i);
+      if (payMatch) {
+        total = parseFloat(payMatch[1].replace(/\./g, "").replace(",", "."));
+      } else {
+        const totMatch = html.match(/Valor\s+total[^]*?class="totalNumb[^"]*"[^>]*>([\d.,]+)/i);
+        if (totMatch) {
+          total = parseFloat(totMatch[1].replace(/\./g, "").replace(",", "."));
+        }
+      }
+
+      // 4. Itens da Nota
+      const itemBlockRegex = /<tr[^>]*id="Item\s*\+\s*\d+"[^>]*>([\s\S]*?)<\/tr>/gi;
+      let match;
+      while ((match = itemBlockRegex.exec(html)) !== null) {
+        const block = match[1];
+        const nameMatch = block.match(/<span[^>]*class="txtTit"[^>]*>([^<]+)<\/span>/i);
+        const qtyMatch = block.match(/<strong>Qtde\.:<\/strong>\s*([^<]+)/i);
+        const priceMatch = block.match(/<strong>Vl\.\s*Unit\.:<\/strong>[\s\S]*?([\d.,]+)\s*<\/span>/i);
+        
+        if (nameMatch && qtyMatch && priceMatch) {
+          const name = nameMatch[1].trim();
+          const quantity = parseFloat(qtyMatch[1].replace(/\./g, "").replace(",", "."));
+          const unitMatch = block.match(/<strong>UN:\s*<\/strong>\s*([^<]+)/i);
+          const unit = unitMatch ? unitMatch[1].trim() : "un";
+          const unitPrice = parseFloat(priceMatch[1].replace(/\./g, "").replace(",", "."));
+          
+          items.push({
+            name,
+            quantity,
+            unit,
+            unitPrice
+          });
+        }
+      }
+    }
+
+    // Fallback: se for outro estado ou se a extração SP falhar, usa o parser genérico
+    if (items.length === 0 && !total) {
+      marketName = parseMarketName(html);
+      const dateMatch = html.match(/(\d{2}\/\d{2}\/\d{4})/);
+      date = dateMatch ? dateMatch[1].split("/").reverse().join("-") : "";
+      total = parseTotal(html);
+      const genericItems = parseItems(html);
+      items = genericItems.map(i => ({
+        name: i.name,
+        quantity: i.quantity,
+        unit: "un",
+        unitPrice: i.unitPrice
+      }));
+    }
+
+    // Se não achou nada de útil após os dois métodos, falha
     if (!marketName && items.length === 0 && !total && !date) {
       return { error: true, message: "Não foi possível extrair dados da página." };
     }
@@ -133,7 +198,7 @@ export async function fetchQRReceiptAction(qrUrl: string) {
         quantity: i.quantity,
         unitPrice: i.unitPrice,
         totalPrice: i.unitPrice * i.quantity,
-        unit: "un",
+        unit: i.unit || "un",
       })),
       qrCode: qrUrl,
       _partial: !marketName,

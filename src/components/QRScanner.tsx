@@ -69,6 +69,26 @@ async function decodeQR(img: HTMLImageElement): Promise<string | null> {
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d")!;
 
+    // 1. Otimização: Tenta ler recortando a área central (onde as pessoas alinham o QR code)
+    // Isso evita distorção/borrão de downsampling em imagens gigantes tiradas pelo celular
+    if (bitmap.width > 800 && bitmap.height > 800) {
+      const cropSize = Math.round(Math.min(bitmap.width, bitmap.height) * 0.65);
+      const cropX = Math.round((bitmap.width - cropSize) / 2);
+      const cropY = Math.round((bitmap.height - cropSize) / 2);
+      
+      canvas.width = cropSize;
+      canvas.height = cropSize;
+      ctx.drawImage(bitmap, cropX, cropY, cropSize, cropSize, 0, 0, cropSize, cropSize);
+      
+      const imageData = ctx.getImageData(0, 0, cropSize, cropSize);
+      const code = jsQR(imageData.data, imageData.width, imageData.height);
+      if (code) {
+        bitmap.close();
+        return code.data;
+      }
+    }
+
+    // 2. Fallback: Escala a imagem completa em múltiplas dimensões
     for (const maxDim of [1200, 800, 1600]) {
       const scale = Math.min(maxDim / bitmap.width, maxDim / bitmap.height, 1);
       const sw = Math.round(bitmap.width * scale);
