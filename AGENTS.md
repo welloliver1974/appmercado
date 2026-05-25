@@ -179,7 +179,11 @@ NEXT_PUBLIC_AI_PROVIDER=groq  # groq (padrão) ou openrouter
 - **`finalizarComprasAction`**: `stock = 1` em vez de `5`
 - **`formatQty()`**: agora arredonda com `Math.round(value * 1000) / 1000` antes de formatar (safety net)
 - **Todos thresholds**: `stock <= 1` → `stock <= 0` (lista-compras, dashboard, assistente, share)
-- **`priceSearch.ts`**: corrigido parser do DuckDuckGo HTML (layout mudou, `<div class="clear">` não separa mais resultados); agora divide por `<div class="result results_links` e adicionado `User-Agent`
+- **Dashboard stockCount**: `_sum.stock` → `product.count({ where: { items: { some: {} } } })` (conta produtos com nota, não soma float)
+- **Dashboard card "Estoque Crítico"**: simplificado — só mostra nome do produto, sem quantidade
+- **Lista de compras**: exibe apenas "Faltando", sem quantidade
+- **`CriticalStockAlert`**: componente mostra só nome do produto, sem `formatQty`
+- **`priceSearch.ts`**: query mudou de `"produto preço"` para `"comprar produto"` (prioriza e-commerces em vez de sites de cotação); adicionados domínios `tendaatacado.com.br`, `assai.com.br`, `samsclub.com.br`
 - **Recalcular**: após deploy, acessar `/estoque` e clicar "Recalcular" para normalizar estoque existente
 
 ## Observações Técnicas

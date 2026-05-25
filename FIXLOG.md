@@ -239,6 +239,17 @@ Mudar estoque de **quantidade acumulada** para **presença binária (0 ou 1)**:
 ### DuckDuckGo Price Search (também corrigido)
 - **`src/lib/priceSearch.ts`**: layout do HTML mudou — `<div class="clear">` não separa mais resultados. Agora divide por `<div class="result results_links"` e adicionado `User-Agent` no request
 
+### Ajustes Pós-Migração (dashboard + exibição)
+- **Dashboard `stockCount`**: mudou de `_sum.stock` (soma float) para `product.count({ where: { items: { some: {} } } })` — conta produtos com nota, independente do valor antigo no banco
+- **Dashboard `CriticalItem`**: simplificado — só mostra nome do produto, sem `formatQty()`
+- **`CriticalStockAlert`**: removeu `formatQty(item.stock)` da exibição
+- **`lista-compras/page.tsx`**: removeu coluna "Estoque" com quantidade, agora só badge "Faltando"
+- **`compartilhado/[token]/page.tsx`**: mesma simplificação — badge "Faltando" sem quantidade
+
+### DuckDuckGo — Query Ajustada
+- Query mudou de `"produto preço"` para `"comprar produto"` — DuckDuckGo retornava sites de cotação agrícola em vez de e-commerces
+- Adicionados domínios: `tendaatacado.com.br`, `assai.com.br`, `samsclub.com.br`
+
 ### Como corrigir estoque existente
 1. Fazer deploy
 2. Acessar `/estoque`
