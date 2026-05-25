@@ -7,7 +7,7 @@ import {
   Trash2, 
   AlertTriangle
 } from "lucide-react";
-import { updateStockAction, deleteProductAction } from "@/app/actions/stock";
+import { updateStockAction, deleteProductAction, recalculateStockAction } from "@/app/actions/stock";
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import { SearchInput } from "@/components/SearchInput";
@@ -56,7 +56,14 @@ export default async function EstoquePage(props: { searchParams?: Promise<{ q?: 
           </h1>
           <p className="text-zinc-400 text-sm mt-1">Gerencie as quantidades e validade dos seus produtos.</p>
         </div>
-        <SearchInput placeholder="Buscar produto..." />
+        <div className="flex items-center gap-3">
+          <form action={recalculateStockAction}>
+            <button className="px-4 py-2 text-xs font-bold uppercase bg-zinc-800 hover:bg-zinc-700 text-zinc-400 hover:text-white rounded-xl transition-all">
+              Recalcular
+            </button>
+          </form>
+          <SearchInput placeholder="Buscar produto..." />
+        </div>
       </div>
 
       <div className="bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-xl">

@@ -180,3 +180,28 @@ Criado `scripts/inline-chunks.mjs` para ler os 81 chunks SSR e embuti-los no `ha
 ### Issues Abertas
 - [ ] Testar fluxo completo no celular (foto → IA → salvar → ver nota) após deploy
 - [ ] Verificar precisão do modelo Groq para leitura de notas fiscais brasileiras
+
+---
+
+## 2026-05-25 (noite) — Correção Crítica: Estoque só Incrementava, Nunca Decrementava
+
+### Problema
+Estoque acumulava valores gigantescos (ex: 35.897 itens para apenas 2 notas). O estoque só aumentava porque:
+- `deleteReceiptAction` deletava a nota mas **nunca decrementava** o `product.stock`
+- `deleteMarketAction` (excluir mercado) também não decrementava stock
+- Cada save no `saveReceiptAction` fazia `stock: { increment: item.quantity }`, mas delete não fazia `decrement`
+- Não havia deduplicação — salvar a mesma nota 2x dobrava o estoque
+
+### Correções
+- **`delete.ts`**: `deleteReceiptAction` agora busca `receiptItem.quantity` de cada produto vinculado e faz `stock: { decrement: item.quantity }` antes de deletar
+- **`delete.ts`**: `deleteMarketAction` idem — decrementa stock de todos itens das notas vinculadas ao mercado
+- **`stock.ts`**: criada `recalculateStockAction()` — recalcula o estoque de TODOS os produtos do usuário somando as quantidades reais dos `ReceiptItem`. Acessível via botão "Recalcular" na página `/estoque`
+
+### Como corrigir o estoque atual
+1. Faça deploy dessas alterações
+2. Acesse `/estoque`
+3. Clique no botão **"Recalcular"** (ao lado da busca)
+4. O estoque de todos os produtos será recalculado com base nas notas salvas
+
+### Nota sobre duplicatas
+Produtos com nomes ligeiramente diferentes (ex: "MACA GALA GRAUDA KG" vs "MACA GALA IMPORTADA KG") são tratados como produtos separados pelo sistema. Isso é intencional — cada mercado nomeia o mesmo produto de forma diferente na NFCE. O usuário pode renomear manualmente ou excluir duplicatas na página de estoque.

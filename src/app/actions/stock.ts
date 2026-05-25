@@ -50,6 +50,39 @@ export async function finalizarComprasAction() {
   }
 }
 
+export async function recalculateStockAction() {
+  const prisma = await getPrisma();
+  const session = await auth();
+  const userId = session?.user?.id;
+  if (!userId) return;
+
+  try {
+    const products = await prisma.product.findMany({
+      where: { userId },
+      select: { id: true },
+    });
+
+    for (const product of products) {
+      const result = await prisma.receiptItem.aggregate({
+        where: { productId: product.id },
+        _sum: { quantity: true },
+      });
+      const actualStock = result._sum.quantity || 0;
+
+      await prisma.product.update({
+        where: { id: product.id },
+        data: { stock: actualStock },
+      });
+    }
+
+    revalidatePath("/");
+    revalidatePath("/estoque");
+    revalidatePath("/lista-compras");
+  } catch (error) {
+    console.error("Erro ao recalcular estoque:", error);
+  }
+}
+
 export async function deleteProductAction(formData: FormData) {
   const prisma = await getPrisma();
   const session = await auth();

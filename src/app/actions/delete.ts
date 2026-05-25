@@ -13,9 +13,22 @@ export async function deleteReceiptAction(formData: FormData) {
   if (!id) return { error: true, message: "ID não informado" };
 
   try {
+    const items = await prisma.receiptItem.findMany({
+      where: { receipt: { id, userId: session.user.id } },
+      select: { productId: true, quantity: true },
+    });
+
+    for (const item of items) {
+      await prisma.product.update({
+        where: { id: item.productId },
+        data: { stock: { decrement: item.quantity } },
+      });
+    }
+
     await prisma.receiptItem.deleteMany({ where: { receipt: { id, userId: session.user.id } } });
     await prisma.receipt.deleteMany({ where: { id, userId: session.user.id } });
     revalidatePath("/notas");
+    revalidatePath("/estoque");
     revalidatePath("/");
     return { success: true };
   } catch (error) {
@@ -33,13 +46,23 @@ export async function deleteMarketAction(formData: FormData) {
   if (!id) return { error: true, message: "ID não informado" };
 
   try {
-    const receipts = await prisma.receipt.findMany({ where: { marketId: id, userId: session.user.id }, select: { id: true } });
-    for (const r of receipts) {
-      await prisma.receiptItem.deleteMany({ where: { receiptId: r.id } });
+    const items = await prisma.receiptItem.findMany({
+      where: { receipt: { marketId: id, userId: session.user.id } },
+      select: { productId: true, quantity: true },
+    });
+
+    for (const item of items) {
+      await prisma.product.update({
+        where: { id: item.productId },
+        data: { stock: { decrement: item.quantity } },
+      });
     }
+
+    await prisma.receiptItem.deleteMany({ where: { receipt: { marketId: id, userId: session.user.id } } });
     await prisma.receipt.deleteMany({ where: { marketId: id, userId: session.user.id } });
     await prisma.market.deleteMany({ where: { id, userId: session.user.id } });
     revalidatePath("/mercados");
+    revalidatePath("/estoque");
     revalidatePath("/");
     return { success: true };
   } catch (error) {
