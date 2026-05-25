@@ -83,7 +83,7 @@ export default function NovaNota() {
     setReceiptData({
       marketName: sefaz?.marketName || `Mercado CNPJ ${cnpjFormatted}`,
       date: sefaz?.date || baseDate,
-      totalAmount: qr.totalAmount || sefaz?.totalAmount || 0,
+      totalAmount: sefaz?.totalAmount || qr.totalAmount || 0,
       items: sefaz?.items || [],
       qrCode: qr.rawUrl,
     });

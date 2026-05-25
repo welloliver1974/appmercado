@@ -1,6 +1,7 @@
 import { getPrisma } from "@/lib/prisma";
 import { notFound } from "next/navigation";
 import { ShoppingCart, Clock, Package } from "lucide-react";
+import { formatQty } from "@/lib/format";
 
 export default async function SharedListPage({ params }: { params: Promise<{ token: string }> }) {
   const prisma = await getPrisma();
@@ -50,7 +51,7 @@ export default async function SharedListPage({ params }: { params: Promise<{ tok
                   </div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-amber-500 font-bold">{item.stock} {item.unit}</p>
+                  <p className="text-sm text-amber-500 font-bold">{formatQty(item.stock)} {item.unit}</p>
                 </div>
               </div>
             ))}

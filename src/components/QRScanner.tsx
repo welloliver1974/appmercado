@@ -21,13 +21,18 @@ export function parseQRData(url: string): QRResult | null {
       const ak = fields[0]?.replace(/\D/g, "");
       if (ak && ak.length === 44) {
         accessKey = ak;
-        for (const idx of [4, 3]) {
-          const raw = fields[idx];
-          if (raw && raw.trim()) {
-            const total = parseFloat(raw.replace(",", "."));
-            if (!isNaN(total) && total > 0) {
-              totalAmount = total;
-              break;
+        // No QR Code padrão NFC-e, o valor total costuma estar no índice 4 ou 5,
+        // apenas se houver quantidade suficiente de campos (mínimo 6 campos).
+        // Evita ler o índice 3 (tipo de emissão) ou índices baixos que causam falsos positivos de R$ 1,00.
+        if (fields.length >= 6) {
+          for (const idx of [4, 5]) {
+            const raw = fields[idx];
+            if (raw && raw.trim() && !/^[a-f]/i.test(raw.trim())) { // evita hashes hexadecimais
+              const total = parseFloat(raw.replace(",", "."));
+              if (!isNaN(total) && total > 0) {
+                totalAmount = total;
+                break;
+              }
             }
           }
         }
