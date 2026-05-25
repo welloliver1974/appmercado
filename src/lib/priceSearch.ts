@@ -5,6 +5,7 @@ const STORE_DOMAINS = [
   "smart.com.br", "sonda.com.br", "mambo.com.br",
   "walmart.com.br", "shopee.com.br", "magazineluiza.com.br",
   "americanas.com.br", "casasbahia.com.br",
+  "tendaatacado.com.br", "assai.com.br", "samsclub.com.br",
 ];
 
 export interface PriceResult {
@@ -15,7 +16,7 @@ export interface PriceResult {
 }
 
 export async function searchProductPrice(productName: string): Promise<PriceResult[]> {
-  const body = new URLSearchParams({ q: `${productName} preço` });
+  const body = new URLSearchParams({ q: `comprar ${productName}` });
 
   try {
     const res = await fetch("https://html.duckduckgo.com/html/", {
