@@ -20,7 +20,10 @@ export async function searchProductPrice(productName: string): Promise<PriceResu
   try {
     const res = await fetch("https://html.duckduckgo.com/html/", {
       method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+      },
       body,
     });
 
@@ -33,11 +36,13 @@ export async function searchProductPrice(productName: string): Promise<PriceResu
 
 function parseResults(html: string): PriceResult[] {
   const results: PriceResult[] = [];
-  const blockRegex = /<div\s+class="result\s+results_links[^>]*>([\s\S]*?)<\/div>\s*<div\s+class="clear"[^>]*>/gi;
 
-  let blockMatch: RegExpExecArray | null;
-  while ((blockMatch = blockRegex.exec(html)) !== null) {
-    const block = blockMatch[1];
+  // Split by result block opening tag
+  const parts = html.split('<div class="result results_links');
+  // parts[0] is everything before first result — skip it
+  for (let i = 1; i < parts.length; i++) {
+    const block = '<div class="result results_links' + parts[i];
+
     const titleMatch = block.match(/<a[^>]*class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/i);
     if (!titleMatch) continue;
 

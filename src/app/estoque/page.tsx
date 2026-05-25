@@ -99,7 +99,7 @@ export default async function EstoquePage(props: { searchParams?: Promise<{ q?: 
 
 function ProductRow({ product }: { product: any }) {
   const lastItem = product.items[0];
-  const isLowStock = product.stock <= (product.minStock || 1);
+  const isLowStock = product.stock <= 0;
 
   return (
     <tr className="group hover:bg-zinc-800/30 transition-colors">

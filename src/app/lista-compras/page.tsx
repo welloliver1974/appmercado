@@ -24,7 +24,7 @@ export default async function ListaComprasPage() {
     where: {
       userId,
       stock: {
-        lte: 1
+        lte: 0
       }
     },
     include: {

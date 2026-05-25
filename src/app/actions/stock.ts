@@ -17,9 +17,10 @@ export async function updateStockAction(formData: FormData) {
     const product = await prisma.product.findUnique({ where: { id: productId } });
     if (!product || product.userId !== userId) return;
 
+    const newStock = quantity > 0 ? 1 : 0;
     await prisma.product.update({
       where: { id: productId },
-      data: { stock: { increment: quantity } },
+      data: { stock: newStock },
     });
     revalidatePath("/estoque");
     revalidatePath("/");
@@ -36,8 +37,8 @@ export async function finalizarComprasAction() {
 
   try {
     await prisma.product.updateMany({
-      where: { userId, stock: { lte: 1 } },
-      data: { stock: 5 },
+      where: { userId, stock: { lte: 0 } },
+      data: { stock: 1 },
     });
 
     revalidatePath("/lista-compras");
@@ -63,11 +64,10 @@ export async function recalculateStockAction() {
     });
 
     for (const product of products) {
-      const result = await prisma.receiptItem.aggregate({
+      const itemCount = await prisma.receiptItem.count({
         where: { productId: product.id },
-        _sum: { quantity: true },
       });
-      const actualStock = result._sum.quantity || 0;
+      const actualStock = itemCount > 0 ? 1 : 0;
 
       await prisma.product.update({
         where: { id: product.id },

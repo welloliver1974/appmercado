@@ -18,15 +18,21 @@ export async function deleteReceiptAction(formData: FormData) {
       select: { productId: true, quantity: true },
     });
 
-    for (const item of items) {
-      await prisma.product.update({
-        where: { id: item.productId },
-        data: { stock: { decrement: item.quantity } },
-      });
-    }
-
     await prisma.receiptItem.deleteMany({ where: { receipt: { id, userId: session.user.id } } });
     await prisma.receipt.deleteMany({ where: { id, userId: session.user.id } });
+
+    // Se o produto não tiver mais receipt items, zera o estoque
+    for (const item of items) {
+      const remainingItems = await prisma.receiptItem.count({
+        where: { productId: item.productId },
+      });
+      if (remainingItems === 0) {
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: { stock: 0 },
+        });
+      }
+    }
     revalidatePath("/notas");
     revalidatePath("/estoque");
     revalidatePath("/");
@@ -51,16 +57,23 @@ export async function deleteMarketAction(formData: FormData) {
       select: { productId: true, quantity: true },
     });
 
-    for (const item of items) {
-      await prisma.product.update({
-        where: { id: item.productId },
-        data: { stock: { decrement: item.quantity } },
-      });
-    }
-
     await prisma.receiptItem.deleteMany({ where: { receipt: { marketId: id, userId: session.user.id } } });
     await prisma.receipt.deleteMany({ where: { marketId: id, userId: session.user.id } });
     await prisma.market.deleteMany({ where: { id, userId: session.user.id } });
+
+    // Se o produto não tiver mais receipt items, zera o estoque
+    for (const item of items) {
+      const remainingItems = await prisma.receiptItem.count({
+        where: { productId: item.productId },
+      });
+      if (remainingItems === 0) {
+        await prisma.product.update({
+          where: { id: item.productId },
+          data: { stock: 0 },
+        });
+      }
+    }
+
     revalidatePath("/mercados");
     revalidatePath("/estoque");
     revalidatePath("/");

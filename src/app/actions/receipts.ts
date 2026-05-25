@@ -66,13 +66,13 @@ export async function saveReceiptAction(data: {
           }
         },
         update: {
-          stock: { increment: item.quantity },
+          stock: 1,
           unit: item.unit,
         },
         create: {
           name: item.name,
           unit: item.unit,
-          stock: item.quantity,
+          stock: 1,
           categoryId: category.id,
           userId: userId
         },

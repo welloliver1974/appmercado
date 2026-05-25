@@ -19,7 +19,7 @@ export async function shareShoppingList() {
   if (!userId) throw new Error("Não autenticado");
 
   const lowStockProducts: LowStockItem[] = await prisma.product.findMany({
-    where: { userId, stock: { lte: 1 } },
+    where: { userId, stock: { lte: 0 } },
     include: { category: true },
     orderBy: { name: "asc" },
   });
@@ -27,7 +27,7 @@ export async function shareShoppingList() {
   const items = lowStockProducts.map((p: any) => ({
     name: p.name,
     category: p.category.name,
-    stock: p.stock,
+    stock: Math.round(p.stock * 1000) / 1000,
     unit: p.unit,
   }));
 

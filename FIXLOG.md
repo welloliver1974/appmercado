@@ -205,3 +205,42 @@ Estoque acumulava valores gigantescos (ex: 35.897 itens para apenas 2 notas). O 
 
 ### Nota sobre duplicatas
 Produtos com nomes ligeiramente diferentes (ex: "MACA GALA GRAUDA KG" vs "MACA GALA IMPORTADA KG") são tratados como produtos separados pelo sistema. Isso é intencional — cada mercado nomeia o mesmo produto de forma diferente na NFCE. O usuário pode renomear manualmente ou excluir duplicatas na página de estoque.
+
+---
+
+## 2026-05-25 (final) — Estoque: Quantidade Decimal → Presença Binária (0/1)
+
+### Problema Original Revisitado
+Estoque acumulava floats imprecisos como `21.8010000000000002` porque somava quantidades fracionárias (kg) de múltiplas notas. O usuário quer saber **"tem banana?"** e não **"quantos kg de banana comprei ao todo?"**. As quantidades já estão visíveis no detalhe de cada nota.
+
+### Decisão
+Mudar estoque de **quantidade acumulada** para **presença binária (0 ou 1)**:
+
+| Operação | Antes | Depois |
+|---|---|---|
+| Salvar nota | `stock += item.quantity` | `stock = 1` |
+| Botão `+` | `stock += 1` | `stock = 1` |
+| Botão `-` | `stock -= 1` | `stock = 0` |
+| Finalizar compras | `stock = 5` | `stock = 1` |
+| Excluir nota | `stock -= item.quantity` | Se não houver mais receipt items → `stock = 0` |
+| Recalcular | `SUM(ReceiptItem.quantity)` | `ReceiptItem.count > 0 ? 1 : 0` |
+
+### Arquivos Alterados
+- **`src/lib/format.ts`**: `formatQty` agora arredonda com `Math.round(value * 1000) / 1000` antes de formatar (safety net contra float impreciso)
+- **`src/app/actions/receipts.ts`**: `saveReceiptAction` — simplificado, sempre seta `stock: 1`
+- **`src/app/actions/stock.ts`**: `updateStockAction` → toggle `+`(1)/`-`(0); `finalizarComprasAction` → `stock: 1`; `recalculateStockAction` → conta receipt items
+- **`src/app/actions/delete.ts`**: `deleteReceiptAction`/`deleteMarketAction` — após deletar itens, verifica se produto tem receipt items restantes; se não, `stock: 0`
+- **`src/app/actions/dashboard.ts`**: `stockCount` arredondado; threshold `lte: 0`
+- **`src/app/actions/share.ts`**: threshold `lte: 0`; stock arredondado
+- **`src/app/api/assistente/route.ts`**: threshold `lte: 0`
+- **`src/app/estoque/page.tsx`**: `isLowStock` → `stock <= 0`
+- **`src/app/lista-compras/page.tsx`**: threshold `lte: 0`
+
+### DuckDuckGo Price Search (também corrigido)
+- **`src/lib/priceSearch.ts`**: layout do HTML mudou — `<div class="clear">` não separa mais resultados. Agora divide por `<div class="result results_links"` e adicionado `User-Agent` no request
+
+### Como corrigir estoque existente
+1. Fazer deploy
+2. Acessar `/estoque`
+3. Clicar **"Recalcular"**
+4. Estoque de todos os produtos vira `1` se tiver nota associada, `0` se não

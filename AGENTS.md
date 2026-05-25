@@ -170,6 +170,18 @@ GROQ_API_KEY=        # opcional, alternativa OpenRouter
 NEXT_PUBLIC_AI_PROVIDER=groq  # groq (padrão) ou openrouter
 ```
 
+### 2026-05-25 — Migração Estoque: Quantidade → Presença (0/1)
+- **Motivação**: Estoque acumulava float `21.8010000000000002` de peso/kg em vez de contar itens. Usuário quer saber "tem banana?" não "quantos kg de banana?"
+- **`saveReceiptAction`**: `stock` agora é sempre `1` (produto existe no estoque), não mais `increment: item.quantity`
+- **`updateStockAction`**: `+` → `1`, `-` → `0` (toggle presença)
+- **`deleteReceiptAction` / `deleteMarketAction`**: depois de deletar, verifica se produto ainda tem receipt items; se não tiver, `stock = 0`
+- **`recalculateStockAction`**: se produto tem `ReceiptItem.count > 0` → `1`, senão `0`
+- **`finalizarComprasAction`**: `stock = 1` em vez de `5`
+- **`formatQty()`**: agora arredonda com `Math.round(value * 1000) / 1000` antes de formatar (safety net)
+- **Todos thresholds**: `stock <= 1` → `stock <= 0` (lista-compras, dashboard, assistente, share)
+- **`priceSearch.ts`**: corrigido parser do DuckDuckGo HTML (layout mudou, `<div class="clear">` não separa mais resultados); agora divide por `<div class="result results_links` e adicionado `User-Agent`
+- **Recalcular**: após deploy, acessar `/estoque` e clicar "Recalcular" para normalizar estoque existente
+
 ## Observações Técnicas
 - `module.register()` deprecation warning do Turbopack — inofensivo
 - HMR warning resolvido via `allowedDevOrigins` no next.config.ts

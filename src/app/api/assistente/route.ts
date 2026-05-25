@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   const [totalSpentMonth, totalStockItems, criticalItems, recentReceipts, monthlyAgg] = await Promise.all([
     prisma.receipt.aggregate({ where: { userId, date: { gte: startOfMonth } }, _sum: { totalAmount: true } }),
     prisma.product.aggregate({ where: { userId }, _sum: { stock: true } }),
-    prisma.product.count({ where: { userId, stock: { lte: 1 } } }),
+    prisma.product.count({ where: { userId, stock: { lte: 0 } } }),
     prisma.receipt.findMany({
       where: { userId },
       orderBy: { date: "desc" },
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
 
   const response = await askAssistant(message, {
     totalSpentMonth: totalSpentMonth._sum.totalAmount || 0,
-    totalStockItems: totalStockItems._sum.stock || 0,
+    totalStockItems: Math.round((totalStockItems._sum.stock || 0) * 1000) / 1000,
     criticalItems,
     recentPurchases,
     monthlyHistory,
