@@ -56,9 +56,12 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - Usa `<input type="file" capture="environment">` (câmera nativa, resolução máxima)
 - `BarcodeDetector` API nativa (Chrome/Safari) com fallback `jsQR`
 - `createImageBitmap` para corrigir orientação EXIF
-- Fallback de resolução reduzida para QR densos
+- **Center Crop 65%** antes de qualquer downsampling — leitura de QR densos em fotos de alta resolução
+- Preview da foto capturada + overlay de erro + botão "Tentar novamente"
 - Parse da chave NFC-e com correção de índices da data (AAMM)
-- Total tenta fields[4] e [3] do parâmetro `p`
+- Total: só lê valor do QR se `fields.length >= 6`, tenta índices 4 e 5 (evita índice 3 que é tipo de emissão e causava total falso de R$ 1,00)
+- Ignora campos que parecem hashes hexadecimais (assinaturas)
+- **`handleQRScan`** prioriza `sefaz.totalAmount` sobre valor do QR (`sefaz?.totalAmount || qr.totalAmount`)
 
 ### Server Actions
 - `processReceiptAction` — Processa imagem com IA (server-side, lê env vars)
@@ -119,7 +122,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
   - OpenRouter visão: `meta-llama/llama-3.2-11b-vision-instruct:free` (404) → `google/gemini-2.0-flash-exp:free`
 - **QR data parsing corrigido**:
   - Data: `substring(1,3)` → `substring(2,4)` para ano, `substring(3,5)` → `substring(4,6)` para mês
-  - Total: removeu restrição `version===2 && tpEmis===9`, tenta fields[4] e [3]
+  - Total: removeu restrição `version===2 && tpEmis===9`; versão inicial tentava fields[4] e [3]
 - **Page crash ao salvar**: removido redirect automático (`window.location.href`). Agora mostra tela de sucesso com links manuais
 - **`saveReceiptAction`**: mudou de `throw new Error` para retornar `{ error, message }` (previnir Next.js error boundary no mobile)
 - **Notas clicáveis**: lista em `/notas` agora com `<Link>` para `/notas/[id]`. Página de detalhe criada com mercado, data, total, itens e botão excluir
@@ -133,6 +136,13 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - **Lista de compras**: botão de deletar item adicionado
 - **`deleteProductAction`**: server action para deletar produtos
 - **`deleteReceiptAction`** e **`deleteMarketAction`**: ações de deletar nota e mercado
+
+### 2026-05-25 (tarde) — Correções Finais QR + SEFAZ SP
+- **QR total falso R$ 1,00 corrigido**: `parseQRData` em `QRScanner.tsx` — agora só lê valor total se `fields.length >= 6` e tenta apenas índices 4 e 5; índice 3 (tipo de emissão = `1`) causava o total falso. Campos com aspecto de hash hexadecimal são descartados
+- **Prioridade SEFAZ sobre QR**: `handleQRScan` em `nova-nota/page.tsx` inverteu a ordem: `sefaz?.totalAmount || qr.totalAmount` — o valor real da página da SEFAZ sempre prevalece sobre o valor do QR
+- **Estoque em `/compartilhado/[token]`**: quantidade exibia `21.80100000000000` (float cru do SQLite/JS). Corrigido importando e usando `formatQty()` de `@/lib/format` — agora exibe `21,801`
+- **`fetchQRReceiptAction` (SEFAZ SP/RJ)**: parser de alta fidelidade para layout nacional responsivo (XSLT 2.05 / v4.00) — extrai nome fantasia (`.txtTopo`), data sem shift de fuso, total real (`.totalNumb` dentro de `.linhaShade`) e lista completa de itens com quantidade fracionária, unidade e preço unitário. Fallback automático para parser genérico se layout for de outro estado
+- **QRScanner Center Crop**: `decodeQR` tenta primeiro recorte central de 65% na resolução original máxima antes de qualquer downsampling — resolve borrão em fotos de celulares de alta resolução
 
 ### Packages Removidos
 - next-auth, @auth/prisma-adapter, @simplewebauthn/server, @simplewebauthn/browser — login só por senha
@@ -166,6 +176,8 @@ NEXT_PUBLIC_AI_PROVIDER=groq  # groq (padrão) ou openrouter
 - Build local: `npm run build` (Turbopack para dev, webpack para produção)
 - Migração Turso: `turso db shell meu-db < prisma/migrations/xxx/migration.sql`
 - Dashboard é componente cliente (`DashboardClient.tsx`) — página estática, fetch de dados via server action
-- Quantidades em formato brasileiro via `toLocaleString('pt-BR')`
+- Quantidades em formato brasileiro via `formatQty()` / `toLocaleString('pt-BR')` — usar sempre `formatQty()` de `@/lib/format`, nunca exibir floats crus
 - ERR_HTTP2_INADEQUATE_TRANSPORT ao rodar projeto local: ignorar, HTTP/2 local instável sem SSL
+- **QR total falso**: nunca usar `fields[3]` do parâmetro `p` — é o tipo de emissão (valor `1`); sempre exigir `fields.length >= 6`
+- **Prioridade de total**: `sefaz.totalAmount` > `qr.totalAmount` > `0` — respeitar essa ordem em `handleQRScan`
 <!-- END:project-memory -->

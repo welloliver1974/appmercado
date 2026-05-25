@@ -168,9 +168,15 @@ Criado `scripts/inline-chunks.mjs` para ler os 81 chunks SSR e embuti-los no `ha
   - Valor total/pago real do cupom (`.totalNumb` dentro de `.linhaShade`)
   - Todos os itens com suas respectivas quantidades fracionárias, preços unitários e unidade de medida.
   - Mantém o fallback automático para o parser genérico se o layout for de outro estado, garantindo robustez universal.
-- **QRScanner (Correção Total R$ 1,00)**: Correção na lógica de extração do valor total de parâmetros do QR Code (`parseQRData`). O parser lia indevidamente o índice 3 de `p` (que em SP representa o "Tipo de Emissão" `1`, gerando o valor falso de `R$ 1,00`). Agora, só tenta parsear valor do QR Code se `fields.length >= 6`, olhando apenas índices 4 e 5, além de desconsiderar assinaturas hexadecimais e **priorizar sempre** o valor real extraído diretamente da página da SEFAZ (`sefaz.totalAmount`) sobre o parâmetro do QR.
-- **Estoque (Correção de Formatação Decimal)**: Corrigida a renderização do estoque na página pública `/compartilhado/[token]` que exibia números de ponto flutuante crus como `21.80100000000000` devido à precisão do SQLite/JS. Agora utiliza o helper `formatQty()` importado do sistema de formatação do app para exibir quantidades corretas (`21,801`).
+- **QR total falso R$ 1,00 (CORRIGIDO)**: `parseQRData` em `QRScanner.tsx` só lê valor total se `fields.length >= 6`, tentando índices 4 e 5. O índice 3 (tipo de emissão = `1` em SP) causava o total falso. Descarta campos com aspecto de hash hexadecimal
+- **Prioridade SEFAZ sobre QR (CORRIGIDA)**: `handleQRScan` em `nova-nota/page.tsx` agora usa `sefaz?.totalAmount || qr.totalAmount` — o valor real da página da SEFAZ sempre prevalece
+- **Estoque em `/compartilhado/[token]` (CORRIGIDO)**: quantidade exibia `21.80100000000000` (float cru do SQLite/JS). Corrigido com `formatQty()` de `@/lib/format`
+
+### Issues Resolvidas nesta Sessão
+- [x] Total falso de R$ 1,00 — `fields[3]` era tipo de emissão, não valor
+- [x] Estoque `21.80100000000000` na página pública — `formatQty()` aplicado
+- [x] Prioridade de total: SEFAZ agora prevalece sobre QR
 
 ### Issues Abertas
-- [ ] Testar fluxo completo no celular (foto → IA → salvar → ver nota)
+- [ ] Testar fluxo completo no celular (foto → IA → salvar → ver nota) após deploy
 - [ ] Verificar precisão do modelo Groq para leitura de notas fiscais brasileiras
