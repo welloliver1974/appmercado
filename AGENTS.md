@@ -198,6 +198,8 @@ NEXT_PUBLIC_AI_PROVIDER=groq  # groq (padrão) ou openrouter
   3. `TAVILY_API_KEY` (Tavily AI Search)
   4. `GOOGLE_SEARCH_API_KEY` + `GOOGLE_CX` (Google Custom Search)
   5. `DuckDuckGo Lite` (Fallback final sem chaves)
+- **Comparação Físico vs Online**: `PriceSearchButton` agora recebe `userPrice={product.minPrice}` e exibe dinamicamente a variação percentual exata de cada resultado online comparada com o menor valor físico pago.
+
 
 ## Observações Técnicas
 - `module.register()` deprecation warning do Turbopack — inofensivo

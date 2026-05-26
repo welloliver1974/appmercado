@@ -275,3 +275,13 @@ Mudar estoque de **quantidade acumulada** para **presença binária (0 ou 1)**:
   5. **DuckDuckGo Lite** (Fallback final sem chaves).
 - Cada provedor realiza chamadas estruturadas perfeitas, evitando erros de 403 por cabeçalhos ou payloads malformados.
 
+### 2026-05-26 (tarde) — Correção: Comparação Dinâmica de Preço Físico vs Online
+- **Motivação**: O aplicativo exibia "Variação total" de 0% quando o usuário comprava o item em uma única loja, pois não comparava o preço pago com as opções encontradas online.
+- **Correção**: 
+  - `src/app/analise/page.tsx` agora passa `userPrice={product.minPrice}` (menor preço físico pago) para o componente `<PriceSearchButton />`.
+  - `src/components/PriceSearchButton.tsx` agora calcula e exibe dinamicamente a variação percentual sob cada resultado de busca online:
+    - Se online for mais barato: `X% mais barato online` (badge âmbar).
+    - Se online for mais caro: `X% mais caro online` (badge esmeralda, indicando economia no físico).
+    - Se for idêntico: `Preço igual` (badge cinza).
+
+

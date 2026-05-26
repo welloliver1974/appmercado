@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, ExternalLink, Loader2, Globe } from "lucide-react";
+import { Search, ExternalLink, Loader2, Globe, TrendingDown, TrendingUp, Equal } from "lucide-react";
 
 interface PriceResult {
   title: string;
@@ -10,7 +10,12 @@ interface PriceResult {
   store: string;
 }
 
-export function PriceSearchButton({ productName }: { productName: string }) {
+interface PriceSearchButtonProps {
+  productName: string;
+  userPrice?: number;
+}
+
+export function PriceSearchButton({ productName, userPrice }: PriceSearchButtonProps) {
   const [results, setResults] = useState<PriceResult[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -36,6 +41,42 @@ export function PriceSearchButton({ productName }: { productName: string }) {
     setLoading(false);
   }
 
+  function getVariationBadge(onlinePriceStr: string | null) {
+    if (!onlinePriceStr || !userPrice) return null;
+    
+    // Parse price string (e.g., "R$ 12,50" -> 12.5)
+    const cleaned = onlinePriceStr.replace("R$", "").replace(/\./g, "").replace(",", ".").trim();
+    const onlinePrice = parseFloat(cleaned);
+    
+    if (isNaN(onlinePrice) || onlinePrice <= 0) return null;
+
+    const diffPercent = ((onlinePrice - userPrice) / userPrice) * 100;
+
+    if (Math.abs(diffPercent) < 1) {
+      return (
+        <span className="text-[10px] font-bold text-zinc-400 bg-zinc-800 px-2 py-0.5 rounded-full flex items-center gap-1">
+          <Equal className="h-2.5 w-2.5" /> Preço igual
+        </span>
+      );
+    }
+
+    if (diffPercent > 0) {
+      // Online is more expensive -> User paid cheaper in physical store!
+      return (
+        <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+          <TrendingDown className="h-2.5 w-2.5" /> {diffPercent.toFixed(0)}% mais caro online
+        </span>
+      );
+    } else {
+      // Online is cheaper -> User paid more expensive!
+      return (
+        <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full flex items-center gap-1">
+          <TrendingUp className="h-2.5 w-2.5" /> {Math.abs(diffPercent).toFixed(0)}% mais barato online
+        </span>
+      );
+    }
+  }
+
   return (
     <div>
       <button
@@ -58,14 +99,21 @@ export function PriceSearchButton({ productName }: { productName: string }) {
               href={r.link}
               target="_blank"
               rel="noopener noreferrer"
-              className="block text-xs text-zinc-300 hover:text-blue-400 transition-colors bg-zinc-900 rounded-lg p-2"
+              className="block text-xs text-zinc-300 hover:text-blue-400 transition-colors bg-zinc-900 rounded-lg p-2 border border-transparent hover:border-zinc-800"
             >
-              <div className="flex items-center justify-between">
-                <span className="font-medium truncate max-w-[180px]">{r.store}</span>
-                <div className="flex items-center gap-1">
-                  {r.price && <span className="font-bold text-emerald-400">{r.price}</span>}
-                  <ExternalLink className="h-3 w-3 text-zinc-500" />
+              <div className="space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium truncate max-w-[150px]">{r.store}</span>
+                  <div className="flex items-center gap-1">
+                    {r.price && <span className="font-bold text-white">{r.price}</span>}
+                    <ExternalLink className="h-3 w-3 text-zinc-500" />
+                  </div>
                 </div>
+                {r.price && userPrice && (
+                  <div className="flex justify-end pt-0.5">
+                    {getVariationBadge(r.price)}
+                  </div>
+                )}
               </div>
             </a>
           ))}

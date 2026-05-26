@@ -159,7 +159,7 @@ export default async function AnalisePage() {
                 </span>
               </div>
 
-              <PriceSearchButton productName={product.name} />
+              <PriceSearchButton productName={product.name} userPrice={product.minPrice} />
             </div>
           ))
         )}
