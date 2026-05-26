@@ -239,15 +239,12 @@ Mudar estoque de **quantidade acumulada** para **presença binária (0 ou 1)**:
 ### DuckDuckGo Price Search (também corrigido)
 - **`src/lib/priceSearch.ts`**: layout do HTML mudou — `<div class="clear">` não separa mais resultados. Agora divide por `<div class="result results_links"` e adicionado `User-Agent` no request
 
-## 2026-05-26 — DuckDuckGo → Google Programmable Search
+## 2026-05-26 — DuckDuckGo → Serper.dev
 - DuckDuckGo HTML search removido de `src/lib/priceSearch.ts` (bloqueava scrapers / HTML mudou de formato)
-- Substituído por **Google Custom Search JSON API** em `src/lib/priceSearch.ts`
-- Requer `GOOGLE_API_KEY` (API key do Google Cloud) e `GOOGLE_SEARCH_CX` (ID do search engine) no `.env`
-- Gratuito: 100 consultas/dia. Após limite: $5/1.000 consultas
-- `searchProductPrice` agora faz fetch direto da API REST do Google; parse usa `items[].title`, `items[].link`, `items[].snippet`
-- Search engine criado com domínios: `mercadolivre.com.br`, `carrefour.com.br`, `paodeacucar.com.br`, `extra.com.br`, `atacadao.com.br`, `amazon.com.br`, `tendaatacado.com.br`, `assai.com.br`, `samsclub.com.br`, `magazineluiza.com.br`, `shopee.com.br`, `americanas.com.br`
-
-- Deploy realizado com sucesso em https://appmercado-chi.vercel.app
+- Google Custom Search API testado mas retornou 403 (permission denied) mesmo com API ativada
+- Substituído por **Serper.dev API** (`google.serper.dev/search`) — API Google Search oficial
+- Requer `SERPER_API_KEY` no `.env`
+- Gratuito: 2.500 consultas no trial; depois planos a partir de ~US$50/mês
 
 ### Ajustes Pós-Migração (dashboard + exibição)
 - **Dashboard `stockCount`**: mudou de `_sum.stock` (soma float) para `product.count({ where: { items: { some: {} } } })` — conta produtos com nota, independente do valor antigo no banco

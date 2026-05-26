@@ -16,34 +16,36 @@ export interface PriceResult {
 }
 
 export async function searchProductPrice(productName: string): Promise<PriceResult[]> {
-  const apiKey = process.env.GOOGLE_API_KEY;
-  const cx = process.env.GOOGLE_SEARCH_CX;
-  if (!apiKey || !cx) return [];
+  const apiKey = process.env.SERPER_API_KEY;
+  if (!apiKey) return [];
 
   try {
-    const url = new URL("https://www.googleapis.com/customsearch/v1");
-    url.searchParams.set("key", apiKey);
-    url.searchParams.set("cx", cx);
-    url.searchParams.set("q", `comprar ${productName}`);
-    url.searchParams.set("hl", "pt-BR");
-    url.searchParams.set("num", "10");
-
-    const res = await fetch(url.toString(), {
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+    const res = await fetch("https://google.serper.dev/search", {
+      method: "POST",
+      headers: {
+        "X-API-KEY": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        q: `comprar ${productName}`,
+        gl: "br",
+        hl: "pt-br",
+        num: 10,
+      }),
     });
 
     if (!res.ok) return [];
 
     const data = await res.json();
-    if (!data.items || !Array.isArray(data.items)) return [];
+    if (!data.organic || !Array.isArray(data.organic)) return [];
 
-    return parseGoogleResults(data.items);
+    return parseSerperResults(data.organic);
   } catch {
     return [];
   }
 }
 
-function parseGoogleResults(items: any[]): PriceResult[] {
+function parseSerperResults(items: any[]): PriceResult[] {
   const results: PriceResult[] = [];
   for (const item of items) {
     const domain = extractDomain(item.link);
