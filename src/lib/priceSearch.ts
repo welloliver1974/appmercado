@@ -16,53 +16,47 @@ export interface PriceResult {
 }
 
 export async function searchProductPrice(productName: string): Promise<PriceResult[]> {
-  const body = new URLSearchParams({ q: `comprar ${productName}` });
+  const apiKey = process.env.GOOGLE_API_KEY;
+  const cx = process.env.GOOGLE_SEARCH_CX;
+  if (!apiKey || !cx) return [];
 
   try {
-    const res = await fetch("https://html.duckduckgo.com/html/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-      },
-      body,
+    const url = new URL("https://www.googleapis.com/customsearch/v1");
+    url.searchParams.set("key", apiKey);
+    url.searchParams.set("cx", cx);
+    url.searchParams.set("q", `comprar ${productName}`);
+    url.searchParams.set("hl", "pt-BR");
+    url.searchParams.set("num", "10");
+
+    const res = await fetch(url.toString(), {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
     });
 
-    const html = await res.text();
-    return parseResults(html);
+    if (!res.ok) return [];
+
+    const data = await res.json();
+    if (!data.items || !Array.isArray(data.items)) return [];
+
+    return parseGoogleResults(data.items);
   } catch {
     return [];
   }
 }
 
-function parseResults(html: string): PriceResult[] {
+function parseGoogleResults(items: any[]): PriceResult[] {
   const results: PriceResult[] = [];
-
-  // Split by result block opening tag
-  const parts = html.split('<div class="result results_links');
-  // parts[0] is everything before first result — skip it
-  for (let i = 1; i < parts.length; i++) {
-    const block = '<div class="result results_links' + parts[i];
-
-    const titleMatch = block.match(/<a[^>]*class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/i);
-    if (!titleMatch) continue;
-
-    const url = titleMatch[1];
-    const title = titleMatch[2].replace(/<[^>]*>/g, "").trim();
-    if (!title) continue;
-
-    const domain = extractDomain(url);
+  for (const item of items) {
+    const domain = extractDomain(item.link);
     const store = getStoreName(domain);
     if (!store) continue;
 
-    const snippetMatch = block.match(/<a[^>]*class="result__snippet"[^>]*>([\s\S]*?)<\/a>/i);
-    const snippet = snippetMatch ? snippetMatch[1].replace(/<[^>]*>/g, "").trim() : "";
+    const snippet = item.snippet || "";
+    const title = item.title || "";
     const price = extractPrice(title, snippet);
 
-    results.push({ title, link: url, price, store });
+    results.push({ title, link: item.link, price, store });
     if (results.length >= 5) break;
   }
-
   return results;
 }
 
@@ -76,16 +70,12 @@ function extractDomain(url: string): string {
 
 function getStoreName(domain: string): string | null {
   if (!domain) return null;
-  // Skip non-commercial domains
   const skipTLDs = [".gov", ".gov.br", ".edu", ".edu.br"];
   for (const tld of skipTLDs) { if (domain.endsWith(tld)) return null; }
-  // Skip .org / .org.br (ONGs, entidades)
   if (domain.endsWith(".org") || domain.endsWith(".org.br")) return null;
-  // Check known store domains first (return friendly name)
   for (const d of STORE_DOMAINS) {
     if (domain === d || domain.endsWith("." + d)) return d.split(".")[0];
   }
-  // Fallback: use first meaningful part of domain as store name
   const parts = domain.split(".");
   if (parts[0] === "www") parts.shift();
   return parts[0] || domain;

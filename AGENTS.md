@@ -168,6 +168,8 @@ TURSO_AUTH_TOKEN=    # preencher com token Turso
 OPENROUTER_API_KEY=  # opcional, para IA
 GROQ_API_KEY=        # opcional, alternativa OpenRouter
 NEXT_PUBLIC_AI_PROVIDER=groq  # groq (padrão) ou openrouter
+GOOGLE_API_KEY=      # obrigatório para busca de preços online (/analise)
+GOOGLE_SEARCH_CX=    # obrigatório — ID do Programmable Search Engine
 ```
 
 ### 2026-05-25 — Migração Estoque: Quantidade → Presença (0/1)
@@ -185,6 +187,13 @@ NEXT_PUBLIC_AI_PROVIDER=groq  # groq (padrão) ou openrouter
 - **`CriticalStockAlert`**: componente mostra só nome do produto, sem `formatQty`
 - **`priceSearch.ts`**: query mudou de `"produto preço"` para `"comprar produto"` (prioriza e-commerces em vez de sites de cotação); adicionados domínios `tendaatacado.com.br`, `assai.com.br`, `samsclub.com.br`
 - **Recalcular**: após deploy, acessar `/estoque` e clicar "Recalcular" para normalizar estoque existente
+
+### 2026-05-26 — DuckDuckGo → Google Programmable Search
+- DuckDuckGo HTML search removido de `src/lib/priceSearch.ts` (bloqueava scrapers)
+- Substituído por Google Custom Search JSON API (`googleapis.com/customsearch/v1`)
+- Requer `GOOGLE_API_KEY` e `GOOGLE_SEARCH_CX` no `.env`
+- Search engine criado com domínios de e-commerce brasileiros + API Key do Google Cloud
+- Gratuito: 100 consultas/dia; $5/1.000 após limite
 
 ## Observações Técnicas
 - `module.register()` deprecation warning do Turbopack — inofensivo
