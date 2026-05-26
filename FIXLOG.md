@@ -263,3 +263,15 @@ Mudar estoque de **quantidade acumulada** para **presença binária (0 ou 1)**:
 2. Acessar `/estoque`
 3. Clicar **"Recalcular"**
 4. Estoque de todos os produtos vira `1` se tiver nota associada, `0` se não
+
+### 2026-05-26 (tarde) — Motor de Busca Multi-Provedor Robusto
+- **Motivação**: Chaves de API (Serper, SerpApi, Google Search, Tavily) falhavam ou davam 403 por formatação incorreta de cabeçalhos/parâmetros, e DuckDuckGo Lite é instável.
+- **Solução**: `src/lib/priceSearch.ts` refatorado em um **Adapter Multi-Provedor**.
+- **Funcionamento**: O sistema detecta chaves ativas no `.env` e tenta na seguinte prioridade de alta confiabilidade:
+  1. **Serper.dev** (`SERPER_API_KEY`) - Altamente recomendado (2.500 buscas grátis na criação de conta).
+  2. **SerpApi** (`SERPAPI_API_KEY`) - 100 buscas grátis/mês.
+  3. **Tavily** (`TAVILY_API_KEY`) - 1.000 buscas grátis/mês.
+  4. **Google Custom Search** (`GOOGLE_SEARCH_API_KEY` + `GOOGLE_CX`).
+  5. **DuckDuckGo Lite** (Fallback final sem chaves).
+- Cada provedor realiza chamadas estruturadas perfeitas, evitando erros de 403 por cabeçalhos ou payloads malformados.
+

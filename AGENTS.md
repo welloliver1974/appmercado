@@ -187,13 +187,17 @@ NEXT_PUBLIC_AI_PROVIDER=groq  # groq (padrão) ou openrouter
 - **`priceSearch.ts`**: query mudou de `"produto preço"` para `"comprar produto"` (prioriza e-commerces em vez de sites de cotação); adicionados domínios `tendaatacado.com.br`, `assai.com.br`, `samsclub.com.br`
 - **Recalcular**: após deploy, acessar `/estoque` e clicar "Recalcular" para normalizar estoque existente
 
-### 2026-05-26 — DuckDuckGo → Google Programmable Search → Serper.dev → DuckDuckGo Lite
+### 2026-05-26 — DuckDuckGo → Google Programmable Search → Serper.dev → DuckDuckGo Lite → Multi-Provedor Robusto
 - DuckDuckGo HTML search removido de `src/lib/priceSearch.ts` (bloqueava scrapers)
 - Google Custom Search API testado mas retornou 403 (permission denied)
 - Serper.dev testado mas chaves retornaram 403 mesmo com conta ativa
-- Solução final: **DuckDuckGo Lite** (`lite.duckduckgo.com/lite/`) — funciona sem API key
-- Parse do HTML simplificado do Lite em vez do HTML completo
-- Não requer nenhuma env var no `.env`
+- **Solução final de Alta Confiabilidade**: `src/lib/priceSearch.ts` transformado em um **Adapter Multi-Provedor**.
+- Ele tenta automaticamente as seguintes chaves se configuradas no `.env` (com chamadas HTTP estruturadas perfeitamente para evitar erros de formatação que causavam 403):
+  1. `SERPER_API_KEY` (Serper.dev - Google Search)
+  2. `SERPAPI_API_KEY` (SerpApi)
+  3. `TAVILY_API_KEY` (Tavily AI Search)
+  4. `GOOGLE_SEARCH_API_KEY` + `GOOGLE_CX` (Google Custom Search)
+  5. `DuckDuckGo Lite` (Fallback final sem chaves)
 
 ## Observações Técnicas
 - `module.register()` deprecation warning do Turbopack — inofensivo
