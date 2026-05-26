@@ -239,12 +239,13 @@ Mudar estoque de **quantidade acumulada** para **presença binária (0 ou 1)**:
 ### DuckDuckGo Price Search (também corrigido)
 - **`src/lib/priceSearch.ts`**: layout do HTML mudou — `<div class="clear">` não separa mais resultados. Agora divide por `<div class="result results_links"` e adicionado `User-Agent` no request
 
-## 2026-05-26 — DuckDuckGo → Serper.dev
+## 2026-05-26 — DuckDuckGo → Google Programmable Search → Serper.dev → DuckDuckGo Lite
 - DuckDuckGo HTML search removido de `src/lib/priceSearch.ts` (bloqueava scrapers / HTML mudou de formato)
 - Google Custom Search API testado mas retornou 403 (permission denied) mesmo com API ativada
-- Substituído por **Serper.dev API** (`google.serper.dev/search`) — API Google Search oficial
-- Requer `SERPER_API_KEY` no `.env`
-- Gratuito: 2.500 consultas no trial; depois planos a partir de ~US$50/mês
+- Serper.dev testado mas chaves retornaram 403 mesmo com conta ativa
+- Solução final: **DuckDuckGo Lite** (`lite.duckduckgo.com/lite/`) — funciona sem API key
+- Parse do HTML simplificado do Lite em vez do HTML completo
+- Não requer nenhuma env var no `.env`
 
 ### Ajustes Pós-Migração (dashboard + exibição)
 - **Dashboard `stockCount`**: mudou de `_sum.stock` (soma float) para `product.count({ where: { items: { some: {} } } })` — conta produtos com nota, independente do valor antigo no banco

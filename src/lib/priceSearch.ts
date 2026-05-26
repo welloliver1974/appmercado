@@ -16,49 +16,59 @@ export interface PriceResult {
 }
 
 export async function searchProductPrice(productName: string): Promise<PriceResult[]> {
-  const apiKey = process.env.SERPER_API_KEY;
-  if (!apiKey) return [];
-
   try {
-    const res = await fetch("https://google.serper.dev/search", {
+    const body = new URLSearchParams({ q: `comprar ${productName}`, o: "json" });
+
+    const res = await fetch("https://lite.duckduckgo.com/lite/", {
       method: "POST",
       headers: {
-        "X-API-KEY": apiKey,
-        "Content-Type": "application/json",
+        "Content-Type": "application/x-www-form-urlencoded",
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
       },
-      body: JSON.stringify({
-        q: `comprar ${productName}`,
-        gl: "br",
-        hl: "pt-br",
-        num: 10,
-      }),
+      body,
     });
 
-    if (!res.ok) return [];
-
-    const data = await res.json();
-    if (!data.organic || !Array.isArray(data.organic)) return [];
-
-    return parseSerperResults(data.organic);
+    const html = await res.text();
+    return parseResults(html);
   } catch {
     return [];
   }
 }
 
-function parseSerperResults(items: any[]): PriceResult[] {
+function parseResults(html: string): PriceResult[] {
   const results: PriceResult[] = [];
-  for (const item of items) {
-    const domain = extractDomain(item.link);
+
+  const linkRegex = /<a rel="nofollow" href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g;
+  const snippetRegex = /<td class='result-snippet'>([\s\S]*?)<\/td>/g;
+
+  const links: { url: string; title: string }[] = [];
+  let match;
+  while ((match = linkRegex.exec(html)) !== null) {
+    const url = match[1];
+    const title = match[2].replace(/<[^>]*>/g, "").trim();
+    if (url && title && !url.includes("duckduckgo.com")) {
+      links.push({ url, title });
+    }
+  }
+
+  const snippets: string[] = [];
+  while ((match = snippetRegex.exec(html)) !== null) {
+    snippets.push(match[1].replace(/<[^>]*>/g, "").trim());
+  }
+
+  for (let i = 0; i < links.length; i++) {
+    const { url, title } = links[i];
+    const domain = extractDomain(url);
     const store = getStoreName(domain);
     if (!store) continue;
 
-    const snippet = item.snippet || "";
-    const title = item.title || "";
+    const snippet = snippets[i] || "";
     const price = extractPrice(title, snippet);
 
-    results.push({ title, link: item.link, price, store });
+    results.push({ title, link: url, price, store });
     if (results.length >= 5) break;
   }
+
   return results;
 }
 

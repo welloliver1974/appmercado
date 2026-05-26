@@ -168,7 +168,7 @@ TURSO_AUTH_TOKEN=    # preencher com token Turso
 OPENROUTER_API_KEY=  # opcional, para IA
 GROQ_API_KEY=        # opcional, alternativa OpenRouter
 NEXT_PUBLIC_AI_PROVIDER=groq  # groq (padrão) ou openrouter
-SERPER_API_KEY=      # obrigatório para busca de preços online (/analise) — serper.dev
+# Busca de preços online (/analise) usa DuckDuckGo Lite — sem API key necessária
 ```
 
 ### 2026-05-25 — Migração Estoque: Quantidade → Presença (0/1)
@@ -187,12 +187,13 @@ SERPER_API_KEY=      # obrigatório para busca de preços online (/analise) — 
 - **`priceSearch.ts`**: query mudou de `"produto preço"` para `"comprar produto"` (prioriza e-commerces em vez de sites de cotação); adicionados domínios `tendaatacado.com.br`, `assai.com.br`, `samsclub.com.br`
 - **Recalcular**: após deploy, acessar `/estoque` e clicar "Recalcular" para normalizar estoque existente
 
-### 2026-05-26 — DuckDuckGo → Serper.dev
+### 2026-05-26 — DuckDuckGo → Google Programmable Search → Serper.dev → DuckDuckGo Lite
 - DuckDuckGo HTML search removido de `src/lib/priceSearch.ts` (bloqueava scrapers)
-- Google Custom Search API testado mas retornou 403 (permission denied) mesmo com API ativada
-- Substituído por Serper.dev API (`google.serper.dev/search`) — API Google Search oficial
-- Requer `SERPER_API_KEY` no `.env`
-- Gratuito: 2.500 consultas no trial; depois planos a partir de ~US$50/mês
+- Google Custom Search API testado mas retornou 403 (permission denied)
+- Serper.dev testado mas chaves retornaram 403 mesmo com conta ativa
+- Solução final: **DuckDuckGo Lite** (`lite.duckduckgo.com/lite/`) — funciona sem API key
+- Parse do HTML simplificado do Lite em vez do HTML completo
+- Não requer nenhuma env var no `.env`
 
 ## Observações Técnicas
 - `module.register()` deprecation warning do Turbopack — inofensivo
